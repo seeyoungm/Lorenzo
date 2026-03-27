@@ -1,0 +1,2419 @@
+[
+  {
+    "id": "cf1",
+    "session_id": "conflict_fact",
+    "turn": 1,
+    "category": "conflicting_memories",
+    "user_input": "중요: 프로젝트 예산은 50만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "conflict_fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "cf2",
+    "session_id": "conflict_fact",
+    "turn": 2,
+    "category": "conflicting_memories",
+    "user_input": "중요: 프로젝트 예산은 80만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "conflict_fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "cf3",
+    "session_id": "conflict_fact",
+    "turn": 3,
+    "category": "conflicting_memories",
+    "user_input": "현재 예산이 얼마지?",
+    "expected_retrieval_keywords": [
+      "80"
+    ],
+    "expected_conflict_winner_keywords": [
+      "80"
+    ],
+    "stale_conflict_keywords": [
+      "50"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "conflict_fact"
+  },
+  {
+    "id": "cf4",
+    "session_id": "conflict_fact",
+    "turn": 4,
+    "category": "conflicting_memories",
+    "user_input": "What is the current project budget?",
+    "expected_retrieval_keywords": [
+      "80"
+    ],
+    "expected_conflict_winner_keywords": [
+      "80"
+    ],
+    "stale_conflict_keywords": [
+      "50"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "conflict_fact"
+  },
+  {
+    "id": "cp1",
+    "session_id": "conflict_preference",
+    "turn": 1,
+    "category": "conflicting_memories",
+    "user_input": "나는 저장소로 SQLite를 선호해",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "conflict_pref",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "cp2",
+    "session_id": "conflict_preference",
+    "turn": 2,
+    "category": "conflicting_memories",
+    "user_input": "이제는 Postgres를 선호해",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "conflict_pref",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "cp3",
+    "session_id": "conflict_preference",
+    "turn": 3,
+    "category": "conflicting_memories",
+    "user_input": "내 저장소 선호가 뭐야?",
+    "expected_retrieval_keywords": [
+      "postgres"
+    ],
+    "expected_conflict_winner_keywords": [
+      "postgres"
+    ],
+    "stale_conflict_keywords": [
+      "sqlite"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "conflict_pref"
+  },
+  {
+    "id": "cp4",
+    "session_id": "conflict_preference",
+    "turn": 4,
+    "category": "conflicting_memories",
+    "user_input": "Do I prefer SQLite or Postgres now?",
+    "expected_retrieval_keywords": [
+      "postgres"
+    ],
+    "expected_conflict_winner_keywords": [
+      "postgres"
+    ],
+    "stale_conflict_keywords": [
+      "sqlite"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "conflict_pref"
+  },
+  {
+    "id": "ct1",
+    "session_id": "conflict_temporal",
+    "turn": 1,
+    "category": "conflicting_memories",
+    "user_input": "내일 회의는 오후 3시야",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "consistency_group": "conflict_time",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ct2",
+    "session_id": "conflict_temporal",
+    "turn": 2,
+    "category": "conflicting_memories",
+    "user_input": "회의가 내일 오후 5시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "consistency_group": "conflict_time",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ct3",
+    "session_id": "conflict_temporal",
+    "turn": 3,
+    "category": "conflicting_memories",
+    "user_input": "회의 시간이 최종적으로 몇 시야?",
+    "expected_retrieval_keywords": [
+      "5시"
+    ],
+    "expected_conflict_winner_keywords": [
+      "5시"
+    ],
+    "stale_conflict_keywords": [
+      "3시"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "conflict_time"
+  },
+  {
+    "id": "ct4",
+    "session_id": "conflict_temporal",
+    "turn": 4,
+    "category": "conflicting_memories",
+    "user_input": "What is the latest meeting time?",
+    "expected_retrieval_keywords": [
+      "5시"
+    ],
+    "expected_conflict_winner_keywords": [
+      "5시"
+    ],
+    "stale_conflict_keywords": [
+      "3시"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "conflict_time"
+  },
+  {
+    "id": "c1",
+    "session_id": "cross_language",
+    "turn": 1,
+    "category": "cross_language",
+    "user_input": "나는 코드 예시는 짧게 주는 걸 선호해",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "cross_lang",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "c2",
+    "session_id": "cross_language",
+    "turn": 2,
+    "category": "cross_language",
+    "user_input": "What is my response style preference?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "짧게",
+      "style"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "cross_lang",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "c3",
+    "session_id": "cross_language",
+    "turn": 3,
+    "category": "cross_language",
+    "user_input": "Important fact: project deadline is April 15.",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "cross_lang",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "c4",
+    "session_id": "cross_language",
+    "turn": 4,
+    "category": "cross_language",
+    "user_input": "프로젝트 마감일이 뭐였지?",
+    "expected_retrieval_keywords": [
+      "deadline",
+      "april",
+      "15"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "cross_lang",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "b1",
+    "session_id": "importance_boundary",
+    "turn": 1,
+    "category": "importance_boundary",
+    "user_input": "좋아",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "boundary",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "b2",
+    "session_id": "importance_boundary",
+    "turn": 2,
+    "category": "importance_boundary",
+    "user_input": "중요: API key rotation은 매주 월요일이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "boundary",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "b3",
+    "session_id": "importance_boundary",
+    "turn": 3,
+    "category": "importance_boundary",
+    "user_input": "메모해: 나는 짧은 bullet 답변을 선호해",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "boundary",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "b4",
+    "session_id": "importance_boundary",
+    "turn": 4,
+    "category": "importance_boundary",
+    "user_input": "안녕?",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "boundary",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l1",
+    "session_id": "long_session_120",
+    "turn": 1,
+    "category": "long_session",
+    "user_input": "나는 장기 기억 중심의 모듈형 AI를 완성하고 싶어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "long_120",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l2",
+    "session_id": "long_session_120",
+    "turn": 2,
+    "category": "long_session",
+    "user_input": "나는 답변은 간결한 bullet 형식을 선호해",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "long_120",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l3",
+    "session_id": "long_session_120",
+    "turn": 3,
+    "category": "long_session",
+    "user_input": "중요: 프로젝트 예산은 60만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "long_120",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l4",
+    "session_id": "long_session_120",
+    "turn": 4,
+    "category": "long_session",
+    "user_input": "나는 이번 주 안에 Memory MVP를 끝낼게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "commitment",
+    "consistency_group": "long_120",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l5",
+    "session_id": "long_session_120",
+    "turn": 5,
+    "category": "long_session",
+    "user_input": "내일 오후 2시에 팀 회의가 있어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "consistency_group": "long_120",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l6",
+    "session_id": "long_session_120",
+    "turn": 6,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "오늘 날씨 어때?",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l7",
+    "session_id": "long_session_120",
+    "turn": 7,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "나는 이번 주 안에 테스트 코드를 정리할게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "commitment",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l8",
+    "session_id": "long_session_120",
+    "turn": 8,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What was my long-term objective again?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l9",
+    "session_id": "long_session_120",
+    "turn": 9,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 선호 응답 스타일이 뭐였더라?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l10",
+    "session_id": "long_session_120",
+    "turn": 10,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 일정이 몇 시로 바뀌었지?",
+    "expected_retrieval_keywords": [
+      "회의",
+      "2시"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l11",
+    "session_id": "long_session_120",
+    "turn": 11,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l12",
+    "session_id": "long_session_120",
+    "turn": 12,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "선호사항 업데이트: 설명은 짧되 핵심은 빠지지 않게 해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l13",
+    "session_id": "long_session_120",
+    "turn": 13,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l14",
+    "session_id": "long_session_120",
+    "turn": 14,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "60",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l15",
+    "session_id": "long_session_120",
+    "turn": 15,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 목표를 다른 표현으로 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l16",
+    "session_id": "long_session_120",
+    "turn": 16,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What was my long-term objective again?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l17",
+    "session_id": "long_session_120",
+    "turn": 17,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l18",
+    "session_id": "long_session_120",
+    "turn": 18,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "회의 시간이 내일 오후 3시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l19",
+    "session_id": "long_session_120",
+    "turn": 19,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l20",
+    "session_id": "long_session_120",
+    "turn": 20,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "중요: 프로젝트 예산은 70만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l21",
+    "session_id": "long_session_120",
+    "turn": 21,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "나는 이번 주 안에 테스트 코드를 정리할게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "commitment",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l22",
+    "session_id": "long_session_120",
+    "turn": 22,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l23",
+    "session_id": "long_session_120",
+    "turn": 23,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l24",
+    "session_id": "long_session_120",
+    "turn": 24,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "선호사항 업데이트: 설명은 짧되 핵심은 빠지지 않게 해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l25",
+    "session_id": "long_session_120",
+    "turn": 25,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What preference did I mention earlier?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l26",
+    "session_id": "long_session_120",
+    "turn": 26,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l27",
+    "session_id": "long_session_120",
+    "turn": 27,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 선호 응답 스타일이 뭐였더라?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l28",
+    "session_id": "long_session_120",
+    "turn": 28,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "70",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l29",
+    "session_id": "long_session_120",
+    "turn": 29,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l30",
+    "session_id": "long_session_120",
+    "turn": 30,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 목표를 다른 표현으로 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l31",
+    "session_id": "long_session_120",
+    "turn": 31,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l32",
+    "session_id": "long_session_120",
+    "turn": 32,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What was my long-term objective again?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l33",
+    "session_id": "long_session_120",
+    "turn": 33,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l34",
+    "session_id": "long_session_120",
+    "turn": 34,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l35",
+    "session_id": "long_session_120",
+    "turn": 35,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "나는 이번 주 안에 테스트 코드를 정리할게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "commitment",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l36",
+    "session_id": "long_session_120",
+    "turn": 36,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "회의 시간이 내일 오후 4시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l37",
+    "session_id": "long_session_120",
+    "turn": 37,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l38",
+    "session_id": "long_session_120",
+    "turn": 38,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l39",
+    "session_id": "long_session_120",
+    "turn": 39,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l40",
+    "session_id": "long_session_120",
+    "turn": 40,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "중요: 프로젝트 예산은 80만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l41",
+    "session_id": "long_session_120",
+    "turn": 41,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l42",
+    "session_id": "long_session_120",
+    "turn": 42,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "80",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l43",
+    "session_id": "long_session_120",
+    "turn": 43,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l44",
+    "session_id": "long_session_120",
+    "turn": 44,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l45",
+    "session_id": "long_session_120",
+    "turn": 45,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 목표를 다른 표현으로 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l46",
+    "session_id": "long_session_120",
+    "turn": 46,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l47",
+    "session_id": "long_session_120",
+    "turn": 47,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l48",
+    "session_id": "long_session_120",
+    "turn": 48,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "선호사항 업데이트: 설명은 짧되 핵심은 빠지지 않게 해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l49",
+    "session_id": "long_session_120",
+    "turn": 49,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "나는 이번 주 안에 테스트 코드를 정리할게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "commitment",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l50",
+    "session_id": "long_session_120",
+    "turn": 50,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 일정이 몇 시로 바뀌었지?",
+    "expected_retrieval_keywords": [
+      "회의",
+      "4시"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l51",
+    "session_id": "long_session_120",
+    "turn": 51,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l52",
+    "session_id": "long_session_120",
+    "turn": 52,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l53",
+    "session_id": "long_session_120",
+    "turn": 53,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l54",
+    "session_id": "long_session_120",
+    "turn": 54,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "회의 시간이 내일 오후 5시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l55",
+    "session_id": "long_session_120",
+    "turn": 55,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l56",
+    "session_id": "long_session_120",
+    "turn": 56,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "80",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l57",
+    "session_id": "long_session_120",
+    "turn": 57,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l58",
+    "session_id": "long_session_120",
+    "turn": 58,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l59",
+    "session_id": "long_session_120",
+    "turn": 59,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l60",
+    "session_id": "long_session_120",
+    "turn": 60,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "중요: 프로젝트 예산은 90만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l61",
+    "session_id": "long_session_120",
+    "turn": 61,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l62",
+    "session_id": "long_session_120",
+    "turn": 62,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l63",
+    "session_id": "long_session_120",
+    "turn": 63,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 선호 응답 스타일이 뭐였더라?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l64",
+    "session_id": "long_session_120",
+    "turn": 64,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What was my long-term objective again?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l65",
+    "session_id": "long_session_120",
+    "turn": 65,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l66",
+    "session_id": "long_session_120",
+    "turn": 66,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l67",
+    "session_id": "long_session_120",
+    "turn": 67,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l68",
+    "session_id": "long_session_120",
+    "turn": 68,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l69",
+    "session_id": "long_session_120",
+    "turn": 69,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l70",
+    "session_id": "long_session_120",
+    "turn": 70,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "90",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l71",
+    "session_id": "long_session_120",
+    "turn": 71,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l72",
+    "session_id": "long_session_120",
+    "turn": 72,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "회의 시간이 내일 오후 6시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l73",
+    "session_id": "long_session_120",
+    "turn": 73,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l74",
+    "session_id": "long_session_120",
+    "turn": 74,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l75",
+    "session_id": "long_session_120",
+    "turn": 75,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 목표를 다른 표현으로 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l76",
+    "session_id": "long_session_120",
+    "turn": 76,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l77",
+    "session_id": "long_session_120",
+    "turn": 77,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l78",
+    "session_id": "long_session_120",
+    "turn": 78,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l79",
+    "session_id": "long_session_120",
+    "turn": 79,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l80",
+    "session_id": "long_session_120",
+    "turn": 80,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "중요: 프로젝트 예산은 100만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l81",
+    "session_id": "long_session_120",
+    "turn": 81,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 선호 응답 스타일이 뭐였더라?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l82",
+    "session_id": "long_session_120",
+    "turn": 82,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l83",
+    "session_id": "long_session_120",
+    "turn": 83,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l84",
+    "session_id": "long_session_120",
+    "turn": 84,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "100",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l85",
+    "session_id": "long_session_120",
+    "turn": 85,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What preference did I mention earlier?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l86",
+    "session_id": "long_session_120",
+    "turn": 86,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l87",
+    "session_id": "long_session_120",
+    "turn": 87,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l88",
+    "session_id": "long_session_120",
+    "turn": 88,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l89",
+    "session_id": "long_session_120",
+    "turn": 89,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l90",
+    "session_id": "long_session_120",
+    "turn": 90,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "회의 시간이 내일 오후 7시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l91",
+    "session_id": "long_session_120",
+    "turn": 91,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l92",
+    "session_id": "long_session_120",
+    "turn": 92,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l93",
+    "session_id": "long_session_120",
+    "turn": 93,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l94",
+    "session_id": "long_session_120",
+    "turn": 94,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l95",
+    "session_id": "long_session_120",
+    "turn": 95,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What preference did I mention earlier?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l96",
+    "session_id": "long_session_120",
+    "turn": 96,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "선호사항 업데이트: 설명은 짧되 핵심은 빠지지 않게 해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l97",
+    "session_id": "long_session_120",
+    "turn": 97,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l98",
+    "session_id": "long_session_120",
+    "turn": 98,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "100",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l99",
+    "session_id": "long_session_120",
+    "turn": 99,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l100",
+    "session_id": "long_session_120",
+    "turn": 100,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "중요: 프로젝트 예산은 110만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l101",
+    "session_id": "long_session_120",
+    "turn": 101,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l102",
+    "session_id": "long_session_120",
+    "turn": 102,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "오늘 날씨 어때?",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l103",
+    "session_id": "long_session_120",
+    "turn": 103,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l104",
+    "session_id": "long_session_120",
+    "turn": 104,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l105",
+    "session_id": "long_session_120",
+    "turn": 105,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "내 목표를 다른 표현으로 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l106",
+    "session_id": "long_session_120",
+    "turn": 106,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l107",
+    "session_id": "long_session_120",
+    "turn": 107,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l108",
+    "session_id": "long_session_120",
+    "turn": 108,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "회의 시간이 내일 오후 8시로 변경됐어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l109",
+    "session_id": "long_session_120",
+    "turn": 109,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l110",
+    "session_id": "long_session_120",
+    "turn": 110,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "Did I commit to finish Memory MVP this week?",
+    "expected_retrieval_keywords": [
+      "commitment",
+      "mvp"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l111",
+    "session_id": "long_session_120",
+    "turn": 111,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l112",
+    "session_id": "long_session_120",
+    "turn": 112,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What is my latest project budget now?",
+    "expected_retrieval_keywords": [
+      "110",
+      "budget"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l113",
+    "session_id": "long_session_120",
+    "turn": 113,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l114",
+    "session_id": "long_session_120",
+    "turn": 114,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "오늘 날씨 어때?",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l115",
+    "session_id": "long_session_120",
+    "turn": 115,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "What preference did I mention earlier?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet",
+      "짧"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l116",
+    "session_id": "long_session_120",
+    "turn": 116,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l117",
+    "session_id": "long_session_120",
+    "turn": 117,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "menu memory module keyword trap",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l118",
+    "session_id": "long_session_120",
+    "turn": 118,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "지금까지 기억 중 핵심만 2개로 말해줘",
+    "expected_retrieval_keywords": [],
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l119",
+    "session_id": "long_session_120",
+    "turn": 119,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "나는 이번 주 안에 테스트 코드를 정리할게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "commitment",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "l120",
+    "session_id": "long_session_120",
+    "turn": 120,
+    "category": "long_session",
+    "consistency_group": "long_120",
+    "user_input": "중요: 프로젝트 예산은 120만원이다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms1",
+    "session_id": "merge_stress",
+    "turn": 1,
+    "category": "merge_stress",
+    "user_input": "나는 장기 기억 중심 AI 목표를 구체화하고 싶어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms2",
+    "session_id": "merge_stress",
+    "turn": 2,
+    "category": "merge_stress",
+    "user_input": "장기 메모리 기반 AI 목표를 단계별로 만들고 싶어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms3",
+    "session_id": "merge_stress",
+    "turn": 3,
+    "category": "merge_stress",
+    "user_input": "내 목표를 한 줄로 요약해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms4",
+    "session_id": "merge_stress",
+    "turn": 4,
+    "category": "merge_stress",
+    "user_input": "I want a modular long-term memory AI plan.",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms5",
+    "session_id": "merge_stress",
+    "turn": 5,
+    "category": "merge_stress",
+    "user_input": "내 선호는 답변을 짧은 bullet로 받는 거야",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms6",
+    "session_id": "merge_stress",
+    "turn": 6,
+    "category": "merge_stress",
+    "user_input": "선호 답변 형식을 다시 알려줘",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms7",
+    "session_id": "merge_stress",
+    "turn": 7,
+    "category": "merge_stress",
+    "user_input": "답변은 짧고 핵심 bullet 위주가 좋아",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms8",
+    "session_id": "merge_stress",
+    "turn": 8,
+    "category": "merge_stress",
+    "user_input": "What style do I prefer?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms9",
+    "session_id": "merge_stress",
+    "turn": 9,
+    "category": "merge_stress",
+    "user_input": "중요: 핵심 사실은 예산이 아직 80만원이라는 점이야",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms10",
+    "session_id": "merge_stress",
+    "turn": 10,
+    "category": "merge_stress",
+    "user_input": "프로젝트 핵심 사실을 다시 말해줘",
+    "expected_retrieval_keywords": [
+      "80",
+      "fact"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms11",
+    "session_id": "merge_stress",
+    "turn": 11,
+    "category": "merge_stress",
+    "user_input": "중요: 현재 핵심 사실은 예산 80만원 유지야",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "fact",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms12",
+    "session_id": "merge_stress",
+    "turn": 12,
+    "category": "merge_stress",
+    "user_input": "What is the key fact now?",
+    "expected_retrieval_keywords": [
+      "80",
+      "fact"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms13",
+    "session_id": "merge_stress",
+    "turn": 13,
+    "category": "merge_stress",
+    "user_input": "나는 장기 기억 중심 AI 설계를 우선순위로 둔다",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms14",
+    "session_id": "merge_stress",
+    "turn": 14,
+    "category": "merge_stress",
+    "user_input": "목표를 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms15",
+    "session_id": "merge_stress",
+    "turn": 15,
+    "category": "merge_stress",
+    "user_input": "장기 기억 모듈형 AI 설계를 완성하는 게 목표야",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms16",
+    "session_id": "merge_stress",
+    "turn": 16,
+    "category": "merge_stress",
+    "user_input": "goal summary again please",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms17",
+    "session_id": "merge_stress",
+    "turn": 17,
+    "category": "merge_stress",
+    "user_input": "나는 간결한 bullet 응답 선호를 유지할게",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms18",
+    "session_id": "merge_stress",
+    "turn": 18,
+    "category": "merge_stress",
+    "user_input": "선호사항 기억하고 있지?",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms19",
+    "session_id": "merge_stress",
+    "turn": 19,
+    "category": "merge_stress",
+    "user_input": "핵심 선호: 짧고 구조화된 bullet",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "preference",
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "ms20",
+    "session_id": "merge_stress",
+    "turn": 20,
+    "category": "merge_stress",
+    "user_input": "내 선호를 영어로 말해줘",
+    "expected_retrieval_keywords": [
+      "preference",
+      "bullet"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "merge_stress",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "m1",
+    "session_id": "misleading",
+    "turn": 1,
+    "category": "misleading",
+    "user_input": "목표: memory-centric architecture를 완성하고 싶어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "mislead",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "m2",
+    "session_id": "misleading",
+    "turn": 2,
+    "category": "misleading",
+    "user_input": "menu memory module keyword trap 문장을 참고해",
+    "expected_retrieval_keywords": [
+      "goal",
+      "architecture"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "mislead",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "m3",
+    "session_id": "misleading",
+    "turn": 3,
+    "category": "misleading",
+    "user_input": "장기 기억 아키텍처 목표가 뭐였지?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "architecture",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "mislead",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "m4",
+    "session_id": "misleading",
+    "turn": 4,
+    "category": "misleading",
+    "user_input": "What was the architecture goal again?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "architecture"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "mislead",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "p1",
+    "session_id": "paraphrase_goal",
+    "turn": 1,
+    "category": "paraphrase",
+    "user_input": "나는 장기 기억 중심 AI를 만들고 싶어",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "goal_paraphrase",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "p2",
+    "session_id": "paraphrase_goal",
+    "turn": 2,
+    "category": "paraphrase",
+    "user_input": "내 목표를 다시 정리해줘",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "goal_paraphrase",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "p3",
+    "session_id": "paraphrase_goal",
+    "turn": 3,
+    "category": "paraphrase",
+    "user_input": "My objective is to build a memory-centric modular AI.",
+    "expected_retrieval_keywords": [],
+    "should_store": true,
+    "expected_store_type": "goal",
+    "consistency_group": "goal_paraphrase",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  },
+  {
+    "id": "p4",
+    "session_id": "paraphrase_goal",
+    "turn": 4,
+    "category": "paraphrase",
+    "user_input": "장기 메모리 AI 목표 아직 기억하지?",
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "should_store": false,
+    "expected_store_type": null,
+    "consistency_group": "goal_paraphrase",
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": []
+  }
+]

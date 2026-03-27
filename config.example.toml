@@ -1,0 +1,17 @@
+[memory]
+path = "sample_data/memory_store.jsonl"
+top_k = 5
+retrieval_preselect_multiplier = 3
+min_similarity_floor = 0.10
+importance_weight = 0.10
+recency_weight = 0.15
+similarity_weight = 0.75
+lexical_fallback_weight = 0.05
+recency_half_life_hours = 72.0
+min_importance_to_store = 6.5
+dedup_similarity_threshold = 0.97
+semantic_merge_similarity_threshold = 0.60
+merge_confidence_threshold = 0.68
+
+[language]
+backend = "rule_based"

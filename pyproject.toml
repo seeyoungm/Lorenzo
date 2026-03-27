@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lorenzo"
+version = "0.1.0"
+description = "Lorenzo v1 - Memory-Centric + Modular Intelligence prototype"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Lorenzo Team" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+lorenzo = "lorenzo.cli:main"
+lorenzo-eval = "lorenzo.eval:main"
+
+[tool.setuptools]
+packages = ["lorenzo", "lorenzo.memory", "lorenzo.reasoning", "lorenzo.language"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
