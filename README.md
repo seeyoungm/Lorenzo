@@ -17,6 +17,15 @@ Status:
 - memory semantics stabilized
 - next focus: retrieval recall recovery
 
+## v1.3 Update
+
+v1.3 beta:
+- Added conditional weak override for fallback retrieval
+- Diagnosed weak-override blocking causes
+- Improved broad-eval top1 retrieval from 0.562 to 0.594
+- Preserved precision and stale-memory safety
+- No false-positive reintroduction observed
+
 ## 핵심 특징
 
 - 모듈형 파이프라인
@@ -32,6 +41,9 @@ Status:
 - 다국어 유사도 지원(한국어/영어 개념 정규화 기반)
 - memory type 구분: `episodic / semantic / working`
 - 저장 정책: `importance threshold(상향) + deduplication + pre-write semantic summary synthesis + type filter`
+- two-tier memory 정책:
+  - `strong memory`: fully trusted memory
+  - `weak memory`: retrieval fallback 힌트 전용 memory (`weak_goal`, `weak_preference`)
 - intent 경계 규칙 강화:
   - `goal`: `strong_goal / weak_goal` 구분(semantic 저장은 strong만)
     - strong 조건: 미래 지향 + 달성/변환 의도 + 비일시적 지속성
@@ -183,6 +195,12 @@ lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios
 - `false_goal_from_opinion_rate`
 - `false_goal_from_temporary_desire_rate`
 - `goal_intrusion_rate_in_retrieval_top1`
+- `retrieval_hit_rate_top1_strong_only`
+- `retrieval_hit_rate_top1_with_fallback`
+- `weak_memory_usage_rate`
+- `weak_memory_promotion_rate`
+- `false_positive_reintroduced_rate`
+- `goal_recall_recovery_rate`
 
 ## 구현 우선순위 매핑
 

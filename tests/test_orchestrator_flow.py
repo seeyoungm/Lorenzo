@@ -12,7 +12,7 @@ class FlagRetriever:
     def __init__(self) -> None:
         self.called = False
 
-    def retrieve(self, query, memories, top_k=5):  # noqa: ANN001
+    def retrieve(self, query, memories, top_k=5, now=None, mode="auto"):  # noqa: ANN001
         self.called = True
         return []
 

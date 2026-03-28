@@ -67,6 +67,8 @@ class ProcessedInput:
     input_types: list[InputType] = field(default_factory=list)
     entities: list[str] = field(default_factory=list)
     goal_confidence: str = "none"
+    preference_confidence: str = "none"
+    fact_confidence: str = "none"
 
 
 @dataclass(slots=True)

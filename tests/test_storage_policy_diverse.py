@@ -63,3 +63,28 @@ def test_negative_commitment_cases_are_not_stored_as_commitment(tmp_path: Path, 
 
     items = orch.modules.memory_store.list_all()
     assert all("commitment" not in [t.lower() for t in item.tags] for item in items)
+
+
+def test_weak_preference_and_weak_fact_are_stored_as_weak_hints(tmp_path: Path) -> None:
+    orch = _build(tmp_path / "weak-hints.jsonl")
+
+    orch.run_turn("가능하면 오늘은 답변 톤을 조금 더 짧게 해줘")
+    orch.run_turn("예산은 아마 120 정도였던 것 같아")
+
+    items = orch.modules.memory_store.list_all()
+    weak_preference = [
+        item
+        for item in items
+        if item.content.startswith("Weak preference hint:")
+    ]
+    weak_fact = [item for item in items if item.content.startswith("Weak fact hint:")]
+
+    assert len(weak_preference) == 1
+    assert weak_preference[0].metadata.get("memory_tier") == "weak"
+    assert "weak_preference_hint" in [tag.lower() for tag in weak_preference[0].tags]
+
+    assert len(weak_fact) == 1
+    assert weak_fact[0].metadata.get("memory_tier") == "weak"
+    assert "weak_fact_hint" in [tag.lower() for tag in weak_fact[0].tags]
+    assert weak_fact[0].metadata.get("fact_key") == "budget"
+    assert weak_fact[0].metadata.get("fact_value") == "120"

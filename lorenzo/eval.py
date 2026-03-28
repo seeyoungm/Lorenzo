@@ -12,7 +12,7 @@ import tempfile
 from lorenzo.config import AppConfig, load_config
 from lorenzo.input_processor import InputProcessor
 from lorenzo.language.backends import RuleBasedBackend
-from lorenzo.models import MemoryItem, MemoryType
+from lorenzo.models import MemoryItem, MemoryType, RetrievedMemory
 from lorenzo.orchestrator import LorenzoOrchestrator
 from lorenzo.reasoning import ReasoningPlanner
 
@@ -40,6 +40,8 @@ class EvalScenario:
 @dataclass(slots=True)
 class EvalMetrics:
     retrieval_hit_rate_top1: float
+    retrieval_hit_rate_top1_strong_only: float
+    retrieval_hit_rate_top1_with_fallback: float
     retrieval_hit_rate_top3: float
     response_consistency: float
     memory_precision: float
@@ -74,6 +76,35 @@ class EvalMetrics:
     false_goal_from_opinion_rate: float
     false_goal_from_temporary_desire_rate: float
     goal_intrusion_rate_in_retrieval_top1: float
+    weak_memory_usage_rate: float
+    weak_memory_promotion_rate: float
+    false_positive_reintroduced_rate: float
+    goal_recall_recovery_rate: float
+    fallback_trigger_rate: float
+    fallback_help_rate: float
+    fallback_no_effect_rate: float
+    fallback_harm_rate: float
+    avg_rank_change_from_fallback: float
+    weak_candidate_present_rate: float
+    weak_candidate_selected_rate: float
+    weak_coverage_rate: float
+    weak_coverage_goal_recall: float
+    weak_coverage_preference_recall: float
+    weak_coverage_fact_recall: float
+    weak_override_trigger_rate: float
+    weak_override_candidate_rate: float
+    weak_override_blocked_by_low_score_count: int
+    weak_override_blocked_by_similarity_count: int
+    weak_override_blocked_by_type_alignment_count: int
+    weak_override_success_count: int
+    refinement_improvement_rate: float
+    conflict_detected_rate: float
+    answer_change_rate: float
+    iteration_gain_score: float
+    factual_refinement_gain: float
+    preference_alignment_gain: float
+    support_completion_gain: float
+    conflict_fix_rate: float
 
 
 class BaselineEngine:
@@ -125,6 +156,8 @@ def load_scenarios(path: str | Path) -> list[EvalScenario]:
 
 def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -> EvalMetrics:
     retrieval_hits_top1 = 0
+    retrieval_hits_top1_strong_only = 0
+    retrieval_hits_top1_with_fallback = 0
     retrieval_hits_top3 = 0
     retrieval_total = 0
 
@@ -154,6 +187,8 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     false_merge_attempts = 0
     conflict_resolution_count = 0
     candidates_seen = 0
+    weak_memory_stored_count = 0
+    weak_memory_promotion_count = 0
 
     conflict_checks = 0
     conflict_correct = 0
@@ -167,6 +202,39 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     false_goal_source_strong = {"wish": 0, "opinion": 0, "temporary_desire": 0}
     goal_intrusion_probes = 0
     goal_intrusion_count = 0
+    weak_memory_usage_turns = 0
+    false_positive_reintroduced = 0
+    strong_top1_hit_total = 0
+    goal_recall_strong_miss_total = 0
+    goal_recall_recovered_total = 0
+    fallback_trigger_count = 0
+    fallback_help_count = 0
+    fallback_no_effect_count = 0
+    fallback_harm_count = 0
+    fallback_rank_changes: list[int] = []
+    weak_candidate_present_count = 0
+    weak_candidate_selected_count = 0
+    weak_override_trigger_count = 0
+    weak_override_candidate_turn_count = 0
+    weak_override_blocked_by_low_score_count = 0
+    weak_override_blocked_by_similarity_count = 0
+    weak_override_blocked_by_type_alignment_count = 0
+    weak_override_success_count = 0
+    refinement_attempt_total = 0
+    refinement_improvement_total = 0
+    refinement_conflict_detected_total = 0
+    refinement_answer_change_total = 0
+    iteration_gain_total = 0.0
+    factual_refinement_attempt_total = 0
+    factual_refinement_success_total = 0
+    preference_alignment_attempt_total = 0
+    preference_alignment_success_total = 0
+    support_completion_attempt_total = 0
+    support_completion_success_total = 0
+    conflict_fix_attempt_total = 0
+    conflict_fix_success_total = 0
+    recall_query_total_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
+    weak_coverage_hits_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
 
     long_top1_by_session: dict[str, list[tuple[int, bool]]] = {}
     long_top1_by_turn: dict[int, list[int]] = {}
@@ -229,6 +297,67 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
 
             before_telemetry = orchestrator.snapshot_telemetry()
             before_memories = orchestrator.modules.memory_store.list_all()
+            strong_only_ranked = orchestrator.modules.memory_retriever.retrieve(
+                query=scenario.user_input,
+                memories=before_memories,
+                top_k=orchestrator.top_k,
+                mode="strong_only",
+            )
+            fallback_ranked = orchestrator.modules.memory_retriever.retrieve(
+                query=scenario.user_input,
+                memories=before_memories,
+                top_k=orchestrator.top_k,
+                mode="with_fallback",
+            )
+            fallback_triggered = bool(
+                getattr(orchestrator.modules.memory_retriever, "last_fallback_triggered", False)
+            )
+            weak_override_triggered = bool(
+                getattr(orchestrator.modules.memory_retriever, "last_weak_override_triggered", False)
+            )
+            weak_override_candidates_this_turn = int(
+                getattr(
+                    orchestrator.modules.memory_retriever,
+                    "last_weak_override_candidate_count",
+                    0,
+                )
+            )
+            weak_override_blocked_low_this_turn = int(
+                getattr(
+                    orchestrator.modules.memory_retriever,
+                    "last_weak_override_blocked_by_low_score_count",
+                    0,
+                )
+            )
+            weak_override_blocked_sim_this_turn = int(
+                getattr(
+                    orchestrator.modules.memory_retriever,
+                    "last_weak_override_blocked_by_similarity_count",
+                    0,
+                )
+            )
+            weak_override_blocked_type_this_turn = int(
+                getattr(
+                    orchestrator.modules.memory_retriever,
+                    "last_weak_override_blocked_by_type_alignment_count",
+                    0,
+                )
+            )
+            weak_override_success_this_turn = int(
+                getattr(
+                    orchestrator.modules.memory_retriever,
+                    "last_weak_override_success_count",
+                    0,
+                )
+            )
+            strong_top1_text = (
+                strong_only_ranked[0].memory.content.lower() if strong_only_ranked else ""
+            )
+            fallback_top1_text = (
+                fallback_ranked[0].memory.content.lower() if fallback_ranked else ""
+            )
+            weak_candidate_present = any(_is_weak_memory(item) for item in before_memories)
+            weak_candidate_selected = bool(fallback_ranked) and _is_weak_memory(fallback_ranked[0].memory)
             before_count = len(before_memories)
             result = orchestrator.run_turn(scenario.user_input)
             after_count = orchestrator.modules.memory_store.count()
@@ -276,6 +405,60 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
                 if delta > 0 and key in conflict_count_by_type:
                     conflict_count_by_type[key] += delta
             candidates_seen += (after_telemetry.candidates_seen - before_telemetry.candidates_seen)
+            weak_memory_stored_count += (
+                after_telemetry.weak_memory_stored - before_telemetry.weak_memory_stored
+            )
+            weak_memory_promotion_count += (
+                after_telemetry.weak_memory_promotions - before_telemetry.weak_memory_promotions
+            )
+            refinement_attempt_total += (
+                after_telemetry.refinement_attempts - before_telemetry.refinement_attempts
+            )
+            refinement_improvement_total += (
+                after_telemetry.refinement_improvement_count
+                - before_telemetry.refinement_improvement_count
+            )
+            refinement_conflict_detected_total += (
+                after_telemetry.refinement_conflict_detected_count
+                - before_telemetry.refinement_conflict_detected_count
+            )
+            refinement_answer_change_total += (
+                after_telemetry.refinement_answer_changed_count
+                - before_telemetry.refinement_answer_changed_count
+            )
+            iteration_gain_total += (
+                after_telemetry.iteration_gain_total - before_telemetry.iteration_gain_total
+            )
+            factual_refinement_attempt_total += (
+                after_telemetry.factual_refinement_attempts
+                - before_telemetry.factual_refinement_attempts
+            )
+            factual_refinement_success_total += (
+                after_telemetry.factual_refinement_successes
+                - before_telemetry.factual_refinement_successes
+            )
+            preference_alignment_attempt_total += (
+                after_telemetry.preference_alignment_attempts
+                - before_telemetry.preference_alignment_attempts
+            )
+            preference_alignment_success_total += (
+                after_telemetry.preference_alignment_successes
+                - before_telemetry.preference_alignment_successes
+            )
+            support_completion_attempt_total += (
+                after_telemetry.support_completion_attempts
+                - before_telemetry.support_completion_attempts
+            )
+            support_completion_success_total += (
+                after_telemetry.support_completion_successes
+                - before_telemetry.support_completion_successes
+            )
+            conflict_fix_attempt_total += (
+                after_telemetry.conflict_fix_attempts - before_telemetry.conflict_fix_attempts
+            )
+            conflict_fix_success_total += (
+                after_telemetry.conflict_fix_successes - before_telemetry.conflict_fix_successes
+            )
 
             top1_text = (result.retrieved_memories[0].memory.content if result.retrieved_memories else "").lower()
             top3_text = " ".join(item.memory.content for item in result.retrieved_memories[:3]).lower()
@@ -284,15 +467,75 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
                 if result.retrieved_memories
                 else None
             )
+            if any(_is_weak_memory(item.memory) for item in result.retrieved_memories):
+                weak_memory_usage_turns += 1
 
             if scenario.expected_retrieval_keywords:
                 retrieval_total += 1
                 top1_hit = _contains_any_keyword(top1_text, scenario.expected_retrieval_keywords)
+                strong_top1_hit = _contains_any_keyword(strong_top1_text, scenario.expected_retrieval_keywords)
+                fallback_top1_hit = _contains_any_keyword(
+                    fallback_top1_text,
+                    scenario.expected_retrieval_keywords,
+                )
+                strong_best_rank = _best_hit_rank(
+                    strong_only_ranked,
+                    scenario.expected_retrieval_keywords,
+                    top_k=orchestrator.top_k,
+                )
+                fallback_best_rank = _best_hit_rank(
+                    fallback_ranked,
+                    scenario.expected_retrieval_keywords,
+                    top_k=orchestrator.top_k,
+                )
+                fallback_rank_changes.append(strong_best_rank - fallback_best_rank)
                 top3_hit = _contains_any_keyword(top3_text, scenario.expected_retrieval_keywords)
                 if top1_hit:
                     retrieval_hits_top1 += 1
+                if strong_top1_hit:
+                    retrieval_hits_top1_strong_only += 1
+                    strong_top1_hit_total += 1
+                if fallback_top1_hit:
+                    retrieval_hits_top1_with_fallback += 1
                 if top3_hit:
                     retrieval_hits_top3 += 1
+                if strong_top1_hit and not fallback_top1_hit:
+                    false_positive_reintroduced += 1
+                if _is_goal_like_query(scenario.user_input):
+                    if not strong_top1_hit:
+                        goal_recall_strong_miss_total += 1
+                        if fallback_top1_hit:
+                            goal_recall_recovered_total += 1
+                if weak_candidate_present:
+                    weak_candidate_present_count += 1
+                if weak_candidate_selected:
+                    weak_candidate_selected_count += 1
+                query_intent = orchestrator.modules.memory_retriever._infer_intent(scenario.user_input)
+                if query_intent in recall_query_total_by_intent:
+                    recall_query_total_by_intent[query_intent] += 1
+                    aligned_weak_present = any(
+                        _is_weak_memory(item)
+                        and _weak_matches_intent_for_eval(item, query_intent)
+                        for item in before_memories
+                    )
+                    if aligned_weak_present:
+                        weak_coverage_hits_by_intent[query_intent] += 1
+                if fallback_triggered:
+                    fallback_trigger_count += 1
+                    if (not strong_top1_hit) and fallback_top1_hit:
+                        fallback_help_count += 1
+                    elif strong_top1_hit and (not fallback_top1_hit):
+                        fallback_harm_count += 1
+                    else:
+                        fallback_no_effect_count += 1
+                if weak_override_candidates_this_turn > 0:
+                    weak_override_candidate_turn_count += 1
+                weak_override_blocked_by_low_score_count += weak_override_blocked_low_this_turn
+                weak_override_blocked_by_similarity_count += weak_override_blocked_sim_this_turn
+                weak_override_blocked_by_type_alignment_count += weak_override_blocked_type_this_turn
+                weak_override_success_count += weak_override_success_this_turn
+                if weak_override_triggered:
+                    weak_override_trigger_count += 1
 
                 if scenario.category == "long_session":
                     long_top1_by_session.setdefault(scenario.session_id, []).append((scenario.turn, top1_hit))
@@ -359,6 +602,8 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
             temp_dir.cleanup()
 
     retrieval_hit_rate_top1 = _safe_div(retrieval_hits_top1, retrieval_total)
+    retrieval_hit_rate_top1_strong_only = _safe_div(retrieval_hits_top1_strong_only, retrieval_total)
+    retrieval_hit_rate_top1_with_fallback = _safe_div(retrieval_hits_top1_with_fallback, retrieval_total)
     retrieval_hit_rate_top3 = _safe_div(retrieval_hits_top3, retrieval_total)
     response_consistency = _group_consistency(group_to_strategies)
     memory_precision = _safe_div(tp_store, tp_store + fp_store) if (tp_store + fp_store) > 0 else 1.0
@@ -403,9 +648,58 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         false_goal_source_total["temporary_desire"],
     )
     goal_intrusion_rate_in_retrieval_top1 = _safe_div(goal_intrusion_count, goal_intrusion_probes)
+    weak_memory_usage_rate = _safe_div(weak_memory_usage_turns, total_turns)
+    weak_memory_promotion_rate = _safe_div(weak_memory_promotion_count, weak_memory_stored_count)
+    false_positive_reintroduced_rate = _safe_div(false_positive_reintroduced, strong_top1_hit_total)
+    goal_recall_recovery_rate = _safe_div(goal_recall_recovered_total, goal_recall_strong_miss_total)
+    fallback_trigger_rate = _safe_div(fallback_trigger_count, retrieval_total)
+    fallback_help_rate = _safe_div(fallback_help_count, fallback_trigger_count)
+    fallback_no_effect_rate = _safe_div(fallback_no_effect_count, fallback_trigger_count)
+    fallback_harm_rate = _safe_div(fallback_harm_count, fallback_trigger_count)
+    avg_rank_change_from_fallback = (
+        sum(fallback_rank_changes) / len(fallback_rank_changes) if fallback_rank_changes else 0.0
+    )
+    weak_candidate_present_rate = _safe_div(weak_candidate_present_count, retrieval_total)
+    weak_candidate_selected_rate = _safe_div(weak_candidate_selected_count, weak_candidate_present_count)
+    weak_coverage_total_hits = sum(weak_coverage_hits_by_intent.values())
+    weak_coverage_total_turns = sum(recall_query_total_by_intent.values())
+    weak_coverage_rate = _safe_div(weak_coverage_total_hits, weak_coverage_total_turns)
+    weak_coverage_goal_recall = _safe_div(
+        weak_coverage_hits_by_intent["goal_recall"],
+        recall_query_total_by_intent["goal_recall"],
+    )
+    weak_coverage_preference_recall = _safe_div(
+        weak_coverage_hits_by_intent["preference_recall"],
+        recall_query_total_by_intent["preference_recall"],
+    )
+    weak_coverage_fact_recall = _safe_div(
+        weak_coverage_hits_by_intent["fact_recall"],
+        recall_query_total_by_intent["fact_recall"],
+    )
+    weak_override_trigger_rate = _safe_div(weak_override_trigger_count, retrieval_total)
+    weak_override_candidate_rate = _safe_div(weak_override_candidate_turn_count, retrieval_total)
+    refinement_improvement_rate = _safe_div(refinement_improvement_total, refinement_attempt_total)
+    conflict_detected_rate = _safe_div(refinement_conflict_detected_total, refinement_attempt_total)
+    answer_change_rate = _safe_div(refinement_answer_change_total, refinement_attempt_total)
+    iteration_gain_score = _safe_div(iteration_gain_total, refinement_attempt_total)
+    factual_refinement_gain = _safe_div(
+        factual_refinement_success_total,
+        factual_refinement_attempt_total,
+    )
+    preference_alignment_gain = _safe_div(
+        preference_alignment_success_total,
+        preference_alignment_attempt_total,
+    )
+    support_completion_gain = _safe_div(
+        support_completion_success_total,
+        support_completion_attempt_total,
+    )
+    conflict_fix_rate = _safe_div(conflict_fix_success_total, conflict_fix_attempt_total)
 
     return EvalMetrics(
         retrieval_hit_rate_top1=retrieval_hit_rate_top1,
+        retrieval_hit_rate_top1_strong_only=retrieval_hit_rate_top1_strong_only,
+        retrieval_hit_rate_top1_with_fallback=retrieval_hit_rate_top1_with_fallback,
         retrieval_hit_rate_top3=retrieval_hit_rate_top3,
         response_consistency=response_consistency,
         memory_precision=memory_precision,
@@ -440,6 +734,35 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         false_goal_from_opinion_rate=false_goal_from_opinion_rate,
         false_goal_from_temporary_desire_rate=false_goal_from_temporary_desire_rate,
         goal_intrusion_rate_in_retrieval_top1=goal_intrusion_rate_in_retrieval_top1,
+        weak_memory_usage_rate=weak_memory_usage_rate,
+        weak_memory_promotion_rate=weak_memory_promotion_rate,
+        false_positive_reintroduced_rate=false_positive_reintroduced_rate,
+        goal_recall_recovery_rate=goal_recall_recovery_rate,
+        fallback_trigger_rate=fallback_trigger_rate,
+        fallback_help_rate=fallback_help_rate,
+        fallback_no_effect_rate=fallback_no_effect_rate,
+        fallback_harm_rate=fallback_harm_rate,
+        avg_rank_change_from_fallback=avg_rank_change_from_fallback,
+        weak_candidate_present_rate=weak_candidate_present_rate,
+        weak_candidate_selected_rate=weak_candidate_selected_rate,
+        weak_coverage_rate=weak_coverage_rate,
+        weak_coverage_goal_recall=weak_coverage_goal_recall,
+        weak_coverage_preference_recall=weak_coverage_preference_recall,
+        weak_coverage_fact_recall=weak_coverage_fact_recall,
+        weak_override_trigger_rate=weak_override_trigger_rate,
+        weak_override_candidate_rate=weak_override_candidate_rate,
+        weak_override_blocked_by_low_score_count=weak_override_blocked_by_low_score_count,
+        weak_override_blocked_by_similarity_count=weak_override_blocked_by_similarity_count,
+        weak_override_blocked_by_type_alignment_count=weak_override_blocked_by_type_alignment_count,
+        weak_override_success_count=weak_override_success_count,
+        refinement_improvement_rate=refinement_improvement_rate,
+        conflict_detected_rate=conflict_detected_rate,
+        answer_change_rate=answer_change_rate,
+        iteration_gain_score=iteration_gain_score,
+        factual_refinement_gain=factual_refinement_gain,
+        preference_alignment_gain=preference_alignment_gain,
+        support_completion_gain=support_completion_gain,
+        conflict_fix_rate=conflict_fix_rate,
     )
 
 
@@ -454,6 +777,8 @@ def evaluate_baseline(scenarios: list[EvalScenario]) -> EvalMetrics:
 
     return EvalMetrics(
         retrieval_hit_rate_top1=0.0,
+        retrieval_hit_rate_top1_strong_only=0.0,
+        retrieval_hit_rate_top1_with_fallback=0.0,
         retrieval_hit_rate_top3=0.0,
         response_consistency=_group_consistency(group_to_strategies),
         memory_precision=1.0,
@@ -488,12 +813,50 @@ def evaluate_baseline(scenarios: list[EvalScenario]) -> EvalMetrics:
         false_goal_from_opinion_rate=0.0,
         false_goal_from_temporary_desire_rate=0.0,
         goal_intrusion_rate_in_retrieval_top1=0.0,
+        weak_memory_usage_rate=0.0,
+        weak_memory_promotion_rate=0.0,
+        false_positive_reintroduced_rate=0.0,
+        goal_recall_recovery_rate=0.0,
+        fallback_trigger_rate=0.0,
+        fallback_help_rate=0.0,
+        fallback_no_effect_rate=0.0,
+        fallback_harm_rate=0.0,
+        avg_rank_change_from_fallback=0.0,
+        weak_candidate_present_rate=0.0,
+        weak_candidate_selected_rate=0.0,
+        weak_coverage_rate=0.0,
+        weak_coverage_goal_recall=0.0,
+        weak_coverage_preference_recall=0.0,
+        weak_coverage_fact_recall=0.0,
+        weak_override_trigger_rate=0.0,
+        weak_override_candidate_rate=0.0,
+        weak_override_blocked_by_low_score_count=0,
+        weak_override_blocked_by_similarity_count=0,
+        weak_override_blocked_by_type_alignment_count=0,
+        weak_override_success_count=0,
+        refinement_improvement_rate=0.0,
+        conflict_detected_rate=0.0,
+        answer_change_rate=0.0,
+        iteration_gain_score=0.0,
+        factual_refinement_gain=0.0,
+        preference_alignment_gain=0.0,
+        support_completion_gain=0.0,
+        conflict_fix_rate=0.0,
     )
 
 
 def _contains_any_keyword(text: str, keywords: list[str]) -> bool:
     lowered = text.lower()
     return any(keyword.lower() in lowered for keyword in keywords)
+
+
+def _best_hit_rank(ranked: list[RetrievedMemory], keywords: list[str], top_k: int) -> int:
+    if not ranked:
+        return max(1, top_k) + 1
+    for rank, item in enumerate(ranked[: max(1, top_k)], start=1):
+        if _contains_any_keyword(item.memory.content, keywords):
+            return rank
+    return max(1, top_k) + 1
 
 
 def _safe_div(numerator: float, denominator: float) -> float:
@@ -531,6 +894,8 @@ def _memory_type_from_label(label: str) -> MemoryType | None:
 
 
 def _memory_eval_type(memory: MemoryItem) -> str | None:
+    if _is_weak_memory(memory):
+        return None
     tags = {tag.lower() for tag in memory.tags}
     if "goal" in tags or memory.content.startswith("User goal:"):
         return "goal"
@@ -545,6 +910,27 @@ def _memory_eval_type(memory: MemoryItem) -> str | None:
     return None
 
 
+def _is_weak_memory(memory: MemoryItem) -> bool:
+    tier = str(memory.metadata.get("memory_tier", "strong")).lower().strip()
+    return tier == "weak"
+
+
+def _weak_matches_intent_for_eval(memory: MemoryItem, intent: str) -> bool:
+    tags = {tag.lower() for tag in memory.tags}
+    if intent == "goal_recall":
+        return "goal" in tags
+    if intent == "preference_recall":
+        return "preference" in tags
+    if intent == "fact_recall":
+        return "fact" in tags
+    return False
+
+
+def _is_goal_like_query(text: str) -> bool:
+    lowered = text.lower()
+    return any(token in lowered for token in ["goal", "목표", "장기", "long-term"])
+
+
 def _stored_expected_memory(
     retriever,
     memories: list[MemoryItem],
@@ -557,6 +943,8 @@ def _stored_expected_memory(
     label = expected_store_type.lower().strip()
 
     for memory in memories:
+        if _is_weak_memory(memory):
+            continue
         if memory.memory_type is not memory_type:
             continue
         if label in {"goal", "preference", "fact", "commitment"} and label not in {
@@ -631,6 +1019,14 @@ def main() -> None:
     print(f"scenario_count={len(scenarios)}")
     print("[Memory Pipeline]")
     print(f"retrieval_hit_rate_top1={memory_metrics.retrieval_hit_rate_top1:.3f}")
+    print(
+        "retrieval_hit_rate_top1_strong_only="
+        f"{memory_metrics.retrieval_hit_rate_top1_strong_only:.3f}"
+    )
+    print(
+        "retrieval_hit_rate_top1_with_fallback="
+        f"{memory_metrics.retrieval_hit_rate_top1_with_fallback:.3f}"
+    )
     print(f"retrieval_hit_rate_top3={memory_metrics.retrieval_hit_rate_top3:.3f}")
     print(f"response_consistency={memory_metrics.response_consistency:.3f}")
     print(f"memory_precision={memory_metrics.memory_precision:.3f}")
@@ -671,9 +1067,55 @@ def main() -> None:
         "goal_intrusion_rate_in_retrieval_top1="
         f"{memory_metrics.goal_intrusion_rate_in_retrieval_top1:.3f}"
     )
+    print(f"weak_memory_usage_rate={memory_metrics.weak_memory_usage_rate:.3f}")
+    print(f"weak_memory_promotion_rate={memory_metrics.weak_memory_promotion_rate:.3f}")
+    print(f"false_positive_reintroduced_rate={memory_metrics.false_positive_reintroduced_rate:.3f}")
+    print(f"goal_recall_recovery_rate={memory_metrics.goal_recall_recovery_rate:.3f}")
+    print(f"fallback_trigger_rate={memory_metrics.fallback_trigger_rate:.3f}")
+    print(f"fallback_help_rate={memory_metrics.fallback_help_rate:.3f}")
+    print(f"fallback_no_effect_rate={memory_metrics.fallback_no_effect_rate:.3f}")
+    print(f"fallback_harm_rate={memory_metrics.fallback_harm_rate:.3f}")
+    print(f"avg_rank_change_from_fallback={memory_metrics.avg_rank_change_from_fallback:.3f}")
+    print(f"weak_candidate_present_rate={memory_metrics.weak_candidate_present_rate:.3f}")
+    print(f"weak_candidate_selected_rate={memory_metrics.weak_candidate_selected_rate:.3f}")
+    print(f"weak_coverage_rate={memory_metrics.weak_coverage_rate:.3f}")
+    print(f"weak_coverage_goal_recall={memory_metrics.weak_coverage_goal_recall:.3f}")
+    print(f"weak_coverage_preference_recall={memory_metrics.weak_coverage_preference_recall:.3f}")
+    print(f"weak_coverage_fact_recall={memory_metrics.weak_coverage_fact_recall:.3f}")
+    print(f"weak_override_trigger_rate={memory_metrics.weak_override_trigger_rate:.3f}")
+    print(f"weak_override_candidate_rate={memory_metrics.weak_override_candidate_rate:.3f}")
+    print(
+        "weak_override_blocked_by_low_score_count="
+        f"{memory_metrics.weak_override_blocked_by_low_score_count}"
+    )
+    print(
+        "weak_override_blocked_by_similarity_count="
+        f"{memory_metrics.weak_override_blocked_by_similarity_count}"
+    )
+    print(
+        "weak_override_blocked_by_type_alignment_count="
+        f"{memory_metrics.weak_override_blocked_by_type_alignment_count}"
+    )
+    print(f"weak_override_success_count={memory_metrics.weak_override_success_count}")
+    print(f"refinement_improvement_rate={memory_metrics.refinement_improvement_rate:.3f}")
+    print(f"conflict_detected_rate={memory_metrics.conflict_detected_rate:.3f}")
+    print(f"answer_change_rate={memory_metrics.answer_change_rate:.3f}")
+    print(f"iteration_gain_score={memory_metrics.iteration_gain_score:.3f}")
+    print(f"factual_refinement_gain={memory_metrics.factual_refinement_gain:.3f}")
+    print(f"preference_alignment_gain={memory_metrics.preference_alignment_gain:.3f}")
+    print(f"support_completion_gain={memory_metrics.support_completion_gain:.3f}")
+    print(f"conflict_fix_rate={memory_metrics.conflict_fix_rate:.3f}")
 
     print("\n[Baseline]")
     print(f"retrieval_hit_rate_top1={baseline_metrics.retrieval_hit_rate_top1:.3f}")
+    print(
+        "retrieval_hit_rate_top1_strong_only="
+        f"{baseline_metrics.retrieval_hit_rate_top1_strong_only:.3f}"
+    )
+    print(
+        "retrieval_hit_rate_top1_with_fallback="
+        f"{baseline_metrics.retrieval_hit_rate_top1_with_fallback:.3f}"
+    )
     print(f"retrieval_hit_rate_top3={baseline_metrics.retrieval_hit_rate_top3:.3f}")
     print(f"response_consistency={baseline_metrics.response_consistency:.3f}")
     print(f"memory_precision={baseline_metrics.memory_precision:.3f}")
@@ -714,6 +1156,47 @@ def main() -> None:
         "goal_intrusion_rate_in_retrieval_top1="
         f"{baseline_metrics.goal_intrusion_rate_in_retrieval_top1:.3f}"
     )
+    print(f"weak_memory_usage_rate={baseline_metrics.weak_memory_usage_rate:.3f}")
+    print(f"weak_memory_promotion_rate={baseline_metrics.weak_memory_promotion_rate:.3f}")
+    print(f"false_positive_reintroduced_rate={baseline_metrics.false_positive_reintroduced_rate:.3f}")
+    print(f"goal_recall_recovery_rate={baseline_metrics.goal_recall_recovery_rate:.3f}")
+    print(f"fallback_trigger_rate={baseline_metrics.fallback_trigger_rate:.3f}")
+    print(f"fallback_help_rate={baseline_metrics.fallback_help_rate:.3f}")
+    print(f"fallback_no_effect_rate={baseline_metrics.fallback_no_effect_rate:.3f}")
+    print(f"fallback_harm_rate={baseline_metrics.fallback_harm_rate:.3f}")
+    print(f"avg_rank_change_from_fallback={baseline_metrics.avg_rank_change_from_fallback:.3f}")
+    print(f"weak_candidate_present_rate={baseline_metrics.weak_candidate_present_rate:.3f}")
+    print(f"weak_candidate_selected_rate={baseline_metrics.weak_candidate_selected_rate:.3f}")
+    print(f"weak_coverage_rate={baseline_metrics.weak_coverage_rate:.3f}")
+    print(f"weak_coverage_goal_recall={baseline_metrics.weak_coverage_goal_recall:.3f}")
+    print(
+        "weak_coverage_preference_recall="
+        f"{baseline_metrics.weak_coverage_preference_recall:.3f}"
+    )
+    print(f"weak_coverage_fact_recall={baseline_metrics.weak_coverage_fact_recall:.3f}")
+    print(f"weak_override_trigger_rate={baseline_metrics.weak_override_trigger_rate:.3f}")
+    print(f"weak_override_candidate_rate={baseline_metrics.weak_override_candidate_rate:.3f}")
+    print(
+        "weak_override_blocked_by_low_score_count="
+        f"{baseline_metrics.weak_override_blocked_by_low_score_count}"
+    )
+    print(
+        "weak_override_blocked_by_similarity_count="
+        f"{baseline_metrics.weak_override_blocked_by_similarity_count}"
+    )
+    print(
+        "weak_override_blocked_by_type_alignment_count="
+        f"{baseline_metrics.weak_override_blocked_by_type_alignment_count}"
+    )
+    print(f"weak_override_success_count={baseline_metrics.weak_override_success_count}")
+    print(f"refinement_improvement_rate={baseline_metrics.refinement_improvement_rate:.3f}")
+    print(f"conflict_detected_rate={baseline_metrics.conflict_detected_rate:.3f}")
+    print(f"answer_change_rate={baseline_metrics.answer_change_rate:.3f}")
+    print(f"iteration_gain_score={baseline_metrics.iteration_gain_score:.3f}")
+    print(f"factual_refinement_gain={baseline_metrics.factual_refinement_gain:.3f}")
+    print(f"preference_alignment_gain={baseline_metrics.preference_alignment_gain:.3f}")
+    print(f"support_completion_gain={baseline_metrics.support_completion_gain:.3f}")
+    print(f"conflict_fix_rate={baseline_metrics.conflict_fix_rate:.3f}")
 
 
 if __name__ == "__main__":

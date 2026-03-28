@@ -97,8 +97,94 @@ class InputProcessor:
     _short_schedule_markers = ["일정", "약속", "알림", "리마인드", "remind"]
     _event_keywords = ["meeting", "deadline", "appointment", "event", "회의", "마감", "일정", "약속"]
     _fact_keywords = ["사실", "중요", "important", "항상", "never", "절대"]
+    _fact_anchor_keywords = [
+        "예산",
+        "budget",
+        "가격",
+        "price",
+        "deadline",
+        "마감",
+        "버전",
+        "version",
+        "수치",
+        "비율",
+        "percent",
+        "일정",
+    ]
+    _fact_priority_anchor_keywords = [
+        "예산",
+        "budget",
+        "가격",
+        "price",
+        "deadline",
+        "마감",
+        "버전",
+        "version",
+    ]
+    _fact_ambiguous_markers = [
+        "약",
+        "쯤",
+        "정도",
+        "대충",
+        "아마",
+        "추정",
+        "같아",
+        "around",
+        "about",
+        "roughly",
+        "maybe",
+        "perhaps",
+    ]
+    _fact_meta_exclusion_markers = [
+        "요약",
+        "정리",
+        "말해줘",
+        "설명",
+        "알려줘",
+        "어떻게",
+        "무엇",
+        "what",
+        "summarize",
+        "summary",
+    ]
+    _fact_memory_like_markers = [
+        "기억으론",
+        "기억으로는",
+        "였던 것 같",
+        "같았어",
+        "i think it was",
+        "if i remember",
+        "from memory",
+    ]
+    _fact_recall_noise_markers = [
+        "budget recall",
+        "fact recall",
+        "recall now",
+        "memory recall",
+        "기억 리콜",
+        "리콜",
+        "최신값 조회",
+    ]
     _preference_keywords = ["prefer", "preference", "선호", "좋아해", "싫어해", "i like", "i dislike"]
     _preference_context_markers = ["답변", "스타일", "형식", "방식", "tone", "style", "format", "behavior"]
+    _preference_weak_markers = [
+        "가능하면",
+        "되도록",
+        "좋겠",
+        "would prefer",
+        "if possible",
+        "가능했으면",
+        "preferably",
+    ]
+    _preference_indirect_markers = [
+        "짧게 해주",
+        "길지 않았으면",
+        "톤이면 좋겠",
+        "형식이면 좋겠",
+        "스타일이면 좋겠",
+        "would be better",
+        "it helps if",
+    ]
     _commitment_subject_markers = ["나는", "내가", "저는", "제가", "assistant", "ai", "에이전트"]
     _commitment_future_markers = ["will", "i'll", "going to", "할게", "하겠다", "하겠습니다", "할 예정", "예정이야", "하기로"]
     _commitment_action_markers = [
@@ -139,6 +225,9 @@ class InputProcessor:
     _memory_recall_keywords = [
         "recall",
         "what did i",
+        "what was my",
+        "what is my",
+        "latest",
         "remember what",
         "기억나",
         "기억해",
@@ -154,7 +243,14 @@ class InputProcessor:
         labels: list[InputType] = []
 
         has_commitment = self._is_commitment_like(normalized, lower)
-        has_preference = self._is_preference_like(normalized, lower, has_commitment=has_commitment)
+        preference_confidence = self._preference_confidence(
+            normalized,
+            lower,
+            has_commitment=has_commitment,
+        )
+        has_preference = preference_confidence == "strong"
+        fact_confidence = self._fact_confidence(normalized, lower, has_commitment=has_commitment)
+        has_fact = fact_confidence == "strong"
         goal_confidence = self._goal_confidence(normalized, lower, has_commitment=has_commitment)
         has_goal = goal_confidence == "strong"
         has_memory_trigger = self._is_memory_command_like(normalized, lower)
@@ -175,7 +271,7 @@ class InputProcessor:
         if self._contains_any(lower, self._event_keywords):
             labels.append(InputType.EVENT)
 
-        if self._is_fact_like(normalized, lower):
+        if has_fact:
             labels.append(InputType.FACT)
 
         if has_memory_trigger:
@@ -204,6 +300,8 @@ class InputProcessor:
             input_types=labels,
             entities=entities,
             goal_confidence=goal_confidence,
+            preference_confidence=preference_confidence,
+            fact_confidence=fact_confidence,
         )
 
     def _contains_any(self, text: str, keywords: list[str]) -> bool:
@@ -223,11 +321,52 @@ class InputProcessor:
         return has_time_hint or (has_temporal_marker and has_schedule_marker)
 
     def _is_fact_like(self, text: str, lower: str) -> bool:
-        if self._contains_any(lower, self._fact_keywords):
-            return True
+        return self._fact_confidence(text, lower, has_commitment=False) == "strong"
+
+    def _fact_confidence(self, text: str, lower: str, has_commitment: bool) -> str:
+        if has_commitment:
+            return "none"
+        if text.endswith("?"):
+            return "none"
+
         has_number = bool(re.search(r"\d", text))
         has_copula = any(token in lower for token in [" is ", " are ", "이다", "입니다", "였다", "was", "were"])
-        return has_number and has_copula
+        has_fact_keyword = self._contains_any(lower, self._fact_keywords)
+        has_anchor = self._contains_any(lower, self._fact_anchor_keywords)
+        has_priority_anchor = self._contains_any(lower, self._fact_priority_anchor_keywords)
+        has_ambiguous = self._contains_any(lower, self._fact_ambiguous_markers)
+        has_meta_exclusion = self._contains_any(lower, self._fact_meta_exclusion_markers)
+        has_memory_like = self._contains_any(lower, self._fact_memory_like_markers)
+        has_recall_noise = self._contains_any(lower, self._fact_recall_noise_markers)
+
+        if has_meta_exclusion and not has_anchor:
+            return "none"
+        if has_recall_noise and has_priority_anchor and not has_number and not has_copula:
+            return "none"
+        if has_anchor and has_meta_exclusion and not has_number:
+            return "none"
+        if has_anchor and not has_priority_anchor and not has_number:
+            return "none"
+
+        if (has_anchor or has_fact_keyword) and has_number and has_copula and not has_ambiguous:
+            return "strong"
+
+        if has_fact_keyword and has_number and has_copula and not has_meta_exclusion and not has_ambiguous:
+            return "strong"
+
+        if has_priority_anchor and (has_number or has_copula):
+            return "weak"
+
+        if has_priority_anchor and has_memory_like:
+            return "weak"
+
+        if has_number and has_ambiguous and has_memory_like:
+            return "weak"
+
+        if has_anchor and has_number:
+            return "weak"
+
+        return "none"
 
     def _goal_confidence(self, text: str, lower: str, has_commitment: bool) -> str:
         if has_commitment:
@@ -283,16 +422,38 @@ class InputProcessor:
 
         return compact.endswith("?")
 
-    def _is_preference_like(self, text: str, lower: str, has_commitment: bool) -> bool:
+    def _preference_confidence(self, text: str, lower: str, has_commitment: bool) -> str:
         if has_commitment:
-            return False
+            return "none"
+        if text.endswith("?"):
+            return "none"
+
+        has_temporary = any(
+            token in lower for token in ["오늘은", "이번엔", "이번에는", "당장은", "요즘은", "for now", "this time"]
+        )
+        has_low_confidence = any(token in lower for token in ["듯", "같아", "아마", "maybe"])
+        has_indirect = self._contains_any(lower, self._preference_indirect_markers)
         if self._contains_any(lower, self._preference_keywords):
-            return True
+            if self._contains_any(lower, self._goal_wish_markers) or self._contains_any(
+                lower,
+                self._goal_vague_markers,
+            ):
+                return "weak"
+            if has_temporary or has_low_confidence or has_indirect:
+                return "weak"
+            return "strong"
+
         has_context = self._contains_any(lower, self._preference_context_markers)
         has_tone_word = any(token in lower for token in ["좋아", "싫어", "원해", "want"])
         if has_context and has_tone_word and "할게" not in lower and "하겠다" not in lower:
-            return True
-        return False
+            if has_temporary or has_low_confidence or has_indirect:
+                return "weak"
+            return "strong"
+        if has_context and self._contains_any(lower, self._preference_weak_markers):
+            return "weak"
+        if has_context and has_indirect:
+            return "weak"
+        return "none"
 
     def _is_commitment_like(self, text: str, lower: str) -> bool:
         # Negative rules first: vague/ conversational/ speculative phrases are not commitments.
