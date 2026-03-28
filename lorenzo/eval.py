@@ -105,6 +105,13 @@ class EvalMetrics:
     preference_alignment_gain: float
     support_completion_gain: float
     conflict_fix_rate: float
+    claim_support_coverage: float
+    unsupported_claim_rate: float
+    contradiction_reduction_rate: float
+    refinement_regression_rate: float
+    retrieval_improved_but_answer_worsened_rate: float
+    answer_changed_without_support_improvement_rate: float
+    unsupported_claim_remaining_rate: float
 
 
 class BaselineEngine:
@@ -154,7 +161,11 @@ def load_scenarios(path: str | Path) -> list[EvalScenario]:
     return sorted(scenarios, key=lambda s: (s.session_id, s.turn, s.scenario_id))
 
 
-def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -> EvalMetrics:
+def evaluate_memory_pipeline(
+    config: AppConfig,
+    scenarios: list[EvalScenario],
+    failure_dump_path: str | Path | None = None,
+) -> EvalMetrics:
     retrieval_hits_top1 = 0
     retrieval_hits_top1_strong_only = 0
     retrieval_hits_top1_with_fallback = 0
@@ -233,6 +244,14 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     support_completion_success_total = 0
     conflict_fix_attempt_total = 0
     conflict_fix_success_total = 0
+    claim_support_coverage_total = 0.0
+    unsupported_claim_rate_total = 0.0
+    contradiction_reduction_total = 0
+    refinement_regression_total = 0
+    retrieval_improved_but_answer_worsened_total = 0
+    answer_changed_without_support_improvement_total = 0
+    unsupported_claim_remaining_total = 0
+    failure_rows: list[dict[str, object]] = []
     recall_query_total_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
     weak_coverage_hits_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
 
@@ -360,6 +379,7 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
             weak_candidate_selected = bool(fallback_ranked) and _is_weak_memory(fallback_ranked[0].memory)
             before_count = len(before_memories)
             result = orchestrator.run_turn(scenario.user_input)
+            refinement_state = orchestrator.last_refinement_result()
             after_count = orchestrator.modules.memory_store.count()
             after_telemetry = orchestrator.snapshot_telemetry()
             after_memories = orchestrator.modules.memory_store.list_all()
@@ -459,6 +479,63 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
             conflict_fix_success_total += (
                 after_telemetry.conflict_fix_successes - before_telemetry.conflict_fix_successes
             )
+            claim_support_coverage_total += (
+                after_telemetry.claim_support_coverage_total
+                - before_telemetry.claim_support_coverage_total
+            )
+            unsupported_claim_rate_total += (
+                after_telemetry.unsupported_claim_rate_total
+                - before_telemetry.unsupported_claim_rate_total
+            )
+            contradiction_reduction_total += (
+                after_telemetry.contradiction_reduction_count
+                - before_telemetry.contradiction_reduction_count
+            )
+            refinement_regression_total += (
+                after_telemetry.refinement_regression_count
+                - before_telemetry.refinement_regression_count
+            )
+            retrieval_improved_but_answer_worsened_total += (
+                after_telemetry.retrieval_improved_but_answer_worsened_count
+                - before_telemetry.retrieval_improved_but_answer_worsened_count
+            )
+            answer_changed_without_support_improvement_total += (
+                after_telemetry.answer_changed_without_support_gain_count
+                - before_telemetry.answer_changed_without_support_gain_count
+            )
+            unsupported_claim_remaining_total += (
+                after_telemetry.unsupported_claim_remaining_count
+                - before_telemetry.unsupported_claim_remaining_count
+            )
+
+            if refinement_state is not None and refinement_state.refinement_triggered:
+                if refinement_state.refinement_regressed:
+                    failure_rows.append(
+                        _build_refinement_failure_row(
+                            scenario=scenario,
+                            bucket="refinement_applied_but_quality_worsened",
+                            result=result,
+                            refinement_state=refinement_state,
+                        )
+                    )
+                if refinement_state.answer_changed_without_support_improvement:
+                    failure_rows.append(
+                        _build_refinement_failure_row(
+                            scenario=scenario,
+                            bucket="answer_changed_but_support_not_improved",
+                            result=result,
+                            refinement_state=refinement_state,
+                        )
+                    )
+                if refinement_state.unsupported_claims_remaining:
+                    failure_rows.append(
+                        _build_refinement_failure_row(
+                            scenario=scenario,
+                            bucket="unsupported_claims_remaining",
+                            result=result,
+                            refinement_state=refinement_state,
+                        )
+                    )
 
             top1_text = (result.retrieved_memories[0].memory.content if result.retrieved_memories else "").lower()
             top3_text = " ".join(item.memory.content for item in result.retrieved_memories[:3]).lower()
@@ -695,6 +772,24 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         support_completion_attempt_total,
     )
     conflict_fix_rate = _safe_div(conflict_fix_success_total, conflict_fix_attempt_total)
+    claim_support_coverage = _safe_div(claim_support_coverage_total, refinement_attempt_total)
+    unsupported_claim_rate = _safe_div(unsupported_claim_rate_total, refinement_attempt_total)
+    contradiction_reduction_rate = _safe_div(contradiction_reduction_total, refinement_attempt_total)
+    refinement_regression_rate = _safe_div(refinement_regression_total, refinement_attempt_total)
+    retrieval_improved_but_answer_worsened_rate = _safe_div(
+        retrieval_improved_but_answer_worsened_total,
+        refinement_attempt_total,
+    )
+    answer_changed_without_support_improvement_rate = _safe_div(
+        answer_changed_without_support_improvement_total,
+        refinement_attempt_total,
+    )
+    unsupported_claim_remaining_rate = _safe_div(
+        unsupported_claim_remaining_total,
+        refinement_attempt_total,
+    )
+    if failure_dump_path:
+        _write_failure_dump(failure_dump_path, failure_rows)
 
     return EvalMetrics(
         retrieval_hit_rate_top1=retrieval_hit_rate_top1,
@@ -763,6 +858,13 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         preference_alignment_gain=preference_alignment_gain,
         support_completion_gain=support_completion_gain,
         conflict_fix_rate=conflict_fix_rate,
+        claim_support_coverage=claim_support_coverage,
+        unsupported_claim_rate=unsupported_claim_rate,
+        contradiction_reduction_rate=contradiction_reduction_rate,
+        refinement_regression_rate=refinement_regression_rate,
+        retrieval_improved_but_answer_worsened_rate=retrieval_improved_but_answer_worsened_rate,
+        answer_changed_without_support_improvement_rate=answer_changed_without_support_improvement_rate,
+        unsupported_claim_remaining_rate=unsupported_claim_remaining_rate,
     )
 
 
@@ -842,6 +944,13 @@ def evaluate_baseline(scenarios: list[EvalScenario]) -> EvalMetrics:
         preference_alignment_gain=0.0,
         support_completion_gain=0.0,
         conflict_fix_rate=0.0,
+        claim_support_coverage=0.0,
+        unsupported_claim_rate=0.0,
+        contradiction_reduction_rate=0.0,
+        refinement_regression_rate=0.0,
+        retrieval_improved_but_answer_worsened_rate=0.0,
+        answer_changed_without_support_improvement_rate=0.0,
+        unsupported_claim_remaining_rate=0.0,
     )
 
 
@@ -1004,16 +1113,55 @@ def _retrieval_top1_over_time(long_top1_by_turn: dict[int, list[int]]) -> list[f
     return series
 
 
+def _build_refinement_failure_row(
+    *,
+    scenario: EvalScenario,
+    bucket: str,
+    result,
+    refinement_state,
+) -> dict[str, object]:
+    return {
+        "bucket": bucket,
+        "scenario_id": scenario.scenario_id,
+        "session_id": scenario.session_id,
+        "turn": scenario.turn,
+        "category": scenario.category,
+        "user_input": scenario.user_input,
+        "response": result.response,
+        "trigger_reasons": list(refinement_state.trigger_reasons),
+        "draft_claim_support_coverage": round(refinement_state.draft_claim_support_coverage, 4),
+        "final_claim_support_coverage": round(refinement_state.claim_support_coverage, 4),
+        "draft_unsupported_claim_rate": round(refinement_state.draft_unsupported_claim_rate, 4),
+        "final_unsupported_claim_rate": round(refinement_state.unsupported_claim_rate, 4),
+        "retrieval_improved_but_answer_worsened": bool(
+            refinement_state.retrieval_improved_but_answer_worsened
+        ),
+    }
+
+
+def _write_failure_dump(path: str | Path, rows: list[dict[str, object]]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate Lorenzo memory pipeline vs baseline")
     parser.add_argument("--config", type=str, default="config.example.toml")
     parser.add_argument("--scenarios", type=str, default="sample_data/eval_scenarios.json")
+    parser.add_argument("--failure-dump", type=str, default="")
     args = parser.parse_args()
 
     config = load_config(args.config)
     scenarios = load_scenarios(args.scenarios)
 
-    memory_metrics = evaluate_memory_pipeline(config, scenarios)
+    memory_metrics = evaluate_memory_pipeline(
+        config,
+        scenarios,
+        failure_dump_path=args.failure_dump or None,
+    )
     baseline_metrics = evaluate_baseline(scenarios)
 
     print(f"scenario_count={len(scenarios)}")
@@ -1105,6 +1253,22 @@ def main() -> None:
     print(f"preference_alignment_gain={memory_metrics.preference_alignment_gain:.3f}")
     print(f"support_completion_gain={memory_metrics.support_completion_gain:.3f}")
     print(f"conflict_fix_rate={memory_metrics.conflict_fix_rate:.3f}")
+    print(f"claim_support_coverage={memory_metrics.claim_support_coverage:.3f}")
+    print(f"unsupported_claim_rate={memory_metrics.unsupported_claim_rate:.3f}")
+    print(f"contradiction_reduction_rate={memory_metrics.contradiction_reduction_rate:.3f}")
+    print(f"refinement_regression_rate={memory_metrics.refinement_regression_rate:.3f}")
+    print(
+        "retrieval_improved_but_answer_worsened_rate="
+        f"{memory_metrics.retrieval_improved_but_answer_worsened_rate:.3f}"
+    )
+    print(
+        "answer_changed_without_support_improvement_rate="
+        f"{memory_metrics.answer_changed_without_support_improvement_rate:.3f}"
+    )
+    print(
+        "unsupported_claim_remaining_rate="
+        f"{memory_metrics.unsupported_claim_remaining_rate:.3f}"
+    )
 
     print("\n[Baseline]")
     print(f"retrieval_hit_rate_top1={baseline_metrics.retrieval_hit_rate_top1:.3f}")
@@ -1197,6 +1361,22 @@ def main() -> None:
     print(f"preference_alignment_gain={baseline_metrics.preference_alignment_gain:.3f}")
     print(f"support_completion_gain={baseline_metrics.support_completion_gain:.3f}")
     print(f"conflict_fix_rate={baseline_metrics.conflict_fix_rate:.3f}")
+    print(f"claim_support_coverage={baseline_metrics.claim_support_coverage:.3f}")
+    print(f"unsupported_claim_rate={baseline_metrics.unsupported_claim_rate:.3f}")
+    print(f"contradiction_reduction_rate={baseline_metrics.contradiction_reduction_rate:.3f}")
+    print(f"refinement_regression_rate={baseline_metrics.refinement_regression_rate:.3f}")
+    print(
+        "retrieval_improved_but_answer_worsened_rate="
+        f"{baseline_metrics.retrieval_improved_but_answer_worsened_rate:.3f}"
+    )
+    print(
+        "answer_changed_without_support_improvement_rate="
+        f"{baseline_metrics.answer_changed_without_support_improvement_rate:.3f}"
+    )
+    print(
+        "unsupported_claim_remaining_rate="
+        f"{baseline_metrics.unsupported_claim_remaining_rate:.3f}"
+    )
 
 
 if __name__ == "__main__":

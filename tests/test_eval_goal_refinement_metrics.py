@@ -69,7 +69,8 @@ def test_goal_refinement_metrics_are_reported(tmp_path: Path) -> None:
         ),
     ]
 
-    metrics = evaluate_memory_pipeline(config, scenarios)
+    failure_dump = tmp_path / "refinement_failures.jsonl"
+    metrics = evaluate_memory_pipeline(config, scenarios, failure_dump_path=failure_dump)
 
     assert metrics.goal_precision_strong == 1.0
     assert metrics.goal_recall_strong == 1.0
@@ -106,3 +107,11 @@ def test_goal_refinement_metrics_are_reported(tmp_path: Path) -> None:
     assert 0.0 <= metrics.preference_alignment_gain <= 1.0
     assert 0.0 <= metrics.support_completion_gain <= 1.0
     assert 0.0 <= metrics.conflict_fix_rate <= 1.0
+    assert 0.0 <= metrics.claim_support_coverage <= 1.0
+    assert 0.0 <= metrics.unsupported_claim_rate <= 1.0
+    assert 0.0 <= metrics.contradiction_reduction_rate <= 1.0
+    assert 0.0 <= metrics.refinement_regression_rate <= 1.0
+    assert 0.0 <= metrics.retrieval_improved_but_answer_worsened_rate <= 1.0
+    assert 0.0 <= metrics.answer_changed_without_support_improvement_rate <= 1.0
+    assert 0.0 <= metrics.unsupported_claim_remaining_rate <= 1.0
+    assert failure_dump.exists()
