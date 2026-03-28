@@ -16,6 +16,8 @@ from lorenzo.models import MemoryItem, MemoryType
 from lorenzo.orchestrator import LorenzoOrchestrator
 from lorenzo.reasoning import ReasoningPlanner
 
+EVAL_TYPES = ("goal", "fact", "preference", "commitment", "event")
+
 
 @dataclass(slots=True)
 class EvalScenario:
@@ -30,6 +32,9 @@ class EvalScenario:
     session_id: str
     turn: int
     consistency_group: str | None
+    expected_goal_confidence: str | None = None
+    goal_false_source: str | None = None
+    goal_intrusion_probe: bool = False
 
 
 @dataclass(slots=True)
@@ -47,11 +52,28 @@ class EvalMetrics:
     retrieval_degradation_over_time: float
     merge_activation_rate: float
     false_merge_rate: float
+    merge_false_reject_rate: float
+    merge_candidate_similarity_avg: float
+    merge_rejected_reason: dict[str, int]
+    rejected_count_by_type: dict[str, int]
     merge_success_count: int
     merge_rejected_count: int
     conflict_resolution_count: int
     conflict_resolution_accuracy: float
     stale_memory_usage_rate: float
+    recall_by_type: dict[str, float]
+    precision_by_type: dict[str, float]
+    storage_rate_by_type: dict[str, float]
+    conflict_rate_by_type: dict[str, float]
+    retrieval_top1_over_time: list[float]
+    conflict_accumulation_rate: float
+    goal_precision_strong: float
+    goal_recall_strong: float
+    weak_goal_rate: float
+    false_goal_from_wish_rate: float
+    false_goal_from_opinion_rate: float
+    false_goal_from_temporary_desire_rate: float
+    goal_intrusion_rate_in_retrieval_top1: float
 
 
 class BaselineEngine:
@@ -91,6 +113,9 @@ def load_scenarios(path: str | Path) -> list[EvalScenario]:
                 session_id=item.get("session_id", "default"),
                 turn=int(item.get("turn", idx)),
                 consistency_group=item.get("consistency_group"),
+                expected_goal_confidence=item.get("expected_goal_confidence"),
+                goal_false_source=item.get("goal_false_source"),
+                goal_intrusion_probe=bool(item.get("goal_intrusion_probe", False)),
             )
         )
 
@@ -111,14 +136,21 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
 
     expected_store_total = 0
     stored_expected_total = 0
-    expected_by_type: dict[str, int] = {"goal": 0, "preference": 0, "fact": 0}
-    stored_by_type: dict[str, int] = {"goal": 0, "preference": 0, "fact": 0}
+    expected_by_type: dict[str, int] = {t: 0 for t in EVAL_TYPES}
+    stored_by_type: dict[str, int] = {t: 0 for t in EVAL_TYPES}
+    fp_by_type: dict[str, int] = {t: 0 for t in EVAL_TYPES}
+    actual_stored_count_by_type: dict[str, int] = {t: 0 for t in EVAL_TYPES}
+    conflict_count_by_type: dict[str, int] = {t: 0 for t in EVAL_TYPES}
 
     group_to_strategies: dict[str, list[str]] = {}
     merge_attempts = 0
     merge_applied = 0
     merge_success_count = 0
     merge_rejected_count = 0
+    merge_false_reject_count = 0
+    merge_rejected_reason: dict[str, int] = {}
+    rejected_count_by_type: dict[str, int] = {}
+    merge_candidate_similarity_values: list[float] = []
     false_merge_attempts = 0
     conflict_resolution_count = 0
     candidates_seen = 0
@@ -126,8 +158,18 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     conflict_checks = 0
     conflict_correct = 0
     stale_top1_count = 0
+    goal_expected_strong = 0
+    goal_predicted_strong = 0
+    goal_true_positive_strong = 0
+    goal_labeled_total = 0
+    weak_goal_count = 0
+    false_goal_source_total = {"wish": 0, "opinion": 0, "temporary_desire": 0}
+    false_goal_source_strong = {"wish": 0, "opinion": 0, "temporary_desire": 0}
+    goal_intrusion_probes = 0
+    goal_intrusion_count = 0
 
     long_top1_by_session: dict[str, list[tuple[int, bool]]] = {}
+    long_top1_by_turn: dict[int, list[int]] = {}
     session_max_turn: dict[str, int] = {}
     for scenario in scenarios:
         if scenario.category == "long_session":
@@ -157,12 +199,43 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
 
             _, orchestrator = session_ctx[scenario.session_id]
 
+            processed_for_eval = orchestrator.modules.input_processor.process(scenario.user_input)
+            predicted_goal_confidence = processed_for_eval.goal_confidence
+            expected_goal_confidence = (
+                scenario.expected_goal_confidence.lower().strip()
+                if scenario.expected_goal_confidence
+                else None
+            )
+            if expected_goal_confidence in {"strong", "weak", "none"}:
+                goal_labeled_total += 1
+                if expected_goal_confidence == "strong":
+                    goal_expected_strong += 1
+                if predicted_goal_confidence == "strong":
+                    goal_predicted_strong += 1
+                    if expected_goal_confidence == "strong":
+                        goal_true_positive_strong += 1
+                if predicted_goal_confidence == "weak":
+                    weak_goal_count += 1
+
+            false_goal_source = (
+                scenario.goal_false_source.lower().strip()
+                if scenario.goal_false_source
+                else None
+            )
+            if false_goal_source in false_goal_source_total:
+                false_goal_source_total[false_goal_source] += 1
+                if predicted_goal_confidence == "strong":
+                    false_goal_source_strong[false_goal_source] += 1
+
             before_telemetry = orchestrator.snapshot_telemetry()
-            before_count = orchestrator.modules.memory_store.count()
+            before_memories = orchestrator.modules.memory_store.list_all()
+            before_count = len(before_memories)
             result = orchestrator.run_turn(scenario.user_input)
             after_count = orchestrator.modules.memory_store.count()
             after_telemetry = orchestrator.snapshot_telemetry()
             after_memories = orchestrator.modules.memory_store.list_all()
+            before_ids = {item.memory_id for item in before_memories}
+            added_memories = [item for item in after_memories if item.memory_id not in before_ids]
 
             growth = max(0, after_count - before_count)
             total_growth += growth
@@ -176,16 +249,41 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
             merge_rejected_count += (
                 after_telemetry.merge_rejected_count - before_telemetry.merge_rejected_count
             )
+            merge_false_reject_count += (
+                after_telemetry.merge_false_reject_count - before_telemetry.merge_false_reject_count
+            )
+            for key, value in after_telemetry.merge_rejected_reason.items():
+                delta = value - before_telemetry.merge_rejected_reason.get(key, 0)
+                if delta > 0:
+                    merge_rejected_reason[key] = merge_rejected_reason.get(key, 0) + delta
+            for key, value in after_telemetry.rejected_count_by_type.items():
+                delta = value - before_telemetry.rejected_count_by_type.get(key, 0)
+                if delta > 0:
+                    rejected_count_by_type[key] = rejected_count_by_type.get(key, 0) + delta
+            before_sim_count = len(before_telemetry.merge_candidate_similarity)
+            if len(after_telemetry.merge_candidate_similarity) > before_sim_count:
+                merge_candidate_similarity_values.extend(
+                    after_telemetry.merge_candidate_similarity[before_sim_count:]
+                )
             false_merge_attempts += (
                 after_telemetry.false_merge_attempts - before_telemetry.false_merge_attempts
             )
             conflict_resolution_count += (
                 after_telemetry.conflict_resolved - before_telemetry.conflict_resolved
             )
+            for key, value in after_telemetry.conflict_count_by_type.items():
+                delta = value - before_telemetry.conflict_count_by_type.get(key, 0)
+                if delta > 0 and key in conflict_count_by_type:
+                    conflict_count_by_type[key] += delta
             candidates_seen += (after_telemetry.candidates_seen - before_telemetry.candidates_seen)
 
             top1_text = (result.retrieved_memories[0].memory.content if result.retrieved_memories else "").lower()
             top3_text = " ".join(item.memory.content for item in result.retrieved_memories[:3]).lower()
+            top1_type = (
+                _memory_eval_type(result.retrieved_memories[0].memory)
+                if result.retrieved_memories
+                else None
+            )
 
             if scenario.expected_retrieval_keywords:
                 retrieval_total += 1
@@ -198,6 +296,7 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
 
                 if scenario.category == "long_session":
                     long_top1_by_session.setdefault(scenario.session_id, []).append((scenario.turn, top1_hit))
+                    long_top1_by_turn.setdefault(scenario.turn, []).append(1 if top1_hit else 0)
 
             if scenario.should_store is not None:
                 grew = growth > 0
@@ -208,6 +307,9 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
 
             if scenario.should_store and scenario.expected_store_type:
                 expected_store_total += 1
+                expected_type = scenario.expected_store_type.lower().strip()
+                if expected_type in expected_by_type:
+                    expected_by_type[expected_type] += 1
                 if _stored_expected_memory(
                     orchestrator.modules.memory_retriever,
                     after_memories,
@@ -215,10 +317,25 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
                     scenario.expected_store_type,
                 ):
                     stored_expected_total += 1
-                    if scenario.expected_store_type in stored_by_type:
-                        stored_by_type[scenario.expected_store_type] += 1
-                if scenario.expected_store_type in expected_by_type:
-                    expected_by_type[scenario.expected_store_type] += 1
+                    if expected_type in stored_by_type:
+                        stored_by_type[expected_type] += 1
+
+            added_types_this_turn: set[str] = set()
+            for item in added_memories:
+                eval_type = _memory_eval_type(item)
+                if eval_type is None:
+                    continue
+                actual_stored_count_by_type[eval_type] += 1
+                added_types_this_turn.add(eval_type)
+
+            if scenario.should_store is False:
+                for t in added_types_this_turn:
+                    fp_by_type[t] += 1
+            elif scenario.should_store and scenario.expected_store_type:
+                expected_type = scenario.expected_store_type.lower().strip()
+                for t in added_types_this_turn:
+                    if t != expected_type:
+                        fp_by_type[t] += 1
 
             if scenario.expected_conflict_winner_keywords:
                 conflict_checks += 1
@@ -229,6 +346,11 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
                     top1_text, scenario.stale_conflict_keywords
                 ) and not winner_hit:
                     stale_top1_count += 1
+
+            if scenario.goal_intrusion_probe:
+                goal_intrusion_probes += 1
+                if top1_type == "goal":
+                    goal_intrusion_count += 1
 
             if scenario.consistency_group:
                 group_to_strategies.setdefault(scenario.consistency_group, []).append(result.plan.strategy)
@@ -244,13 +366,43 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     memory_recall_goal = _safe_div(stored_by_type["goal"], expected_by_type["goal"])
     memory_recall_preference = _safe_div(stored_by_type["preference"], expected_by_type["preference"])
     memory_recall_fact = _safe_div(stored_by_type["fact"], expected_by_type["fact"])
+    recall_by_type = {t: _safe_div(stored_by_type[t], expected_by_type[t]) for t in EVAL_TYPES}
+    precision_by_type = {
+        t: _safe_div(stored_by_type[t], stored_by_type[t] + fp_by_type[t]) for t in EVAL_TYPES
+    }
+    storage_rate_by_type = {t: _safe_div(actual_stored_count_by_type[t], total_turns) for t in EVAL_TYPES}
+    conflict_rate_by_type = {
+        t: _safe_div(conflict_count_by_type[t], expected_by_type[t]) for t in EVAL_TYPES
+    }
     memory_growth_per_turn = _safe_div(total_growth, total_turns)
     memory_growth_stability = _growth_stability(growth_history)
+    retrieval_top1_over_time = _retrieval_top1_over_time(long_top1_by_turn)
     retrieval_degradation_over_time = _retrieval_degradation(long_top1_by_session, session_max_turn)
     merge_activation_rate = _safe_div(merge_applied, candidates_seen)
     false_merge_rate = _safe_div(false_merge_attempts, merge_attempts)
+    merge_false_reject_rate = _safe_div(merge_false_reject_count, merge_rejected_count)
+    merge_candidate_similarity_avg = (
+        sum(merge_candidate_similarity_values) / len(merge_candidate_similarity_values)
+        if merge_candidate_similarity_values
+        else 0.0
+    )
     conflict_resolution_accuracy = _safe_div(conflict_correct, conflict_checks)
     stale_memory_usage_rate = _safe_div(stale_top1_count, conflict_checks)
+    conflict_accumulation_rate = _safe_div(conflict_resolution_count, total_turns)
+    goal_precision_strong = _safe_div(goal_true_positive_strong, goal_predicted_strong)
+    goal_recall_strong = _safe_div(goal_true_positive_strong, goal_expected_strong)
+    weak_goal_rate = _safe_div(weak_goal_count, goal_labeled_total)
+    false_goal_from_wish_rate = _safe_div(
+        false_goal_source_strong["wish"], false_goal_source_total["wish"]
+    )
+    false_goal_from_opinion_rate = _safe_div(
+        false_goal_source_strong["opinion"], false_goal_source_total["opinion"]
+    )
+    false_goal_from_temporary_desire_rate = _safe_div(
+        false_goal_source_strong["temporary_desire"],
+        false_goal_source_total["temporary_desire"],
+    )
+    goal_intrusion_rate_in_retrieval_top1 = _safe_div(goal_intrusion_count, goal_intrusion_probes)
 
     return EvalMetrics(
         retrieval_hit_rate_top1=retrieval_hit_rate_top1,
@@ -266,11 +418,28 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         retrieval_degradation_over_time=retrieval_degradation_over_time,
         merge_activation_rate=merge_activation_rate,
         false_merge_rate=false_merge_rate,
+        merge_false_reject_rate=merge_false_reject_rate,
+        merge_candidate_similarity_avg=merge_candidate_similarity_avg,
+        merge_rejected_reason=dict(sorted(merge_rejected_reason.items())),
+        rejected_count_by_type=dict(sorted(rejected_count_by_type.items())),
         merge_success_count=merge_success_count,
         merge_rejected_count=merge_rejected_count,
         conflict_resolution_count=conflict_resolution_count,
         conflict_resolution_accuracy=conflict_resolution_accuracy,
         stale_memory_usage_rate=stale_memory_usage_rate,
+        recall_by_type={k: round(v, 3) for k, v in sorted(recall_by_type.items())},
+        precision_by_type={k: round(v, 3) for k, v in sorted(precision_by_type.items())},
+        storage_rate_by_type={k: round(v, 3) for k, v in sorted(storage_rate_by_type.items())},
+        conflict_rate_by_type={k: round(v, 3) for k, v in sorted(conflict_rate_by_type.items())},
+        retrieval_top1_over_time=[round(v, 3) for v in retrieval_top1_over_time],
+        conflict_accumulation_rate=conflict_accumulation_rate,
+        goal_precision_strong=goal_precision_strong,
+        goal_recall_strong=goal_recall_strong,
+        weak_goal_rate=weak_goal_rate,
+        false_goal_from_wish_rate=false_goal_from_wish_rate,
+        false_goal_from_opinion_rate=false_goal_from_opinion_rate,
+        false_goal_from_temporary_desire_rate=false_goal_from_temporary_desire_rate,
+        goal_intrusion_rate_in_retrieval_top1=goal_intrusion_rate_in_retrieval_top1,
     )
 
 
@@ -297,11 +466,28 @@ def evaluate_baseline(scenarios: list[EvalScenario]) -> EvalMetrics:
         retrieval_degradation_over_time=0.0,
         merge_activation_rate=0.0,
         false_merge_rate=0.0,
+        merge_false_reject_rate=0.0,
+        merge_candidate_similarity_avg=0.0,
+        merge_rejected_reason={},
+        rejected_count_by_type={},
         merge_success_count=0,
         merge_rejected_count=0,
         conflict_resolution_count=0,
         conflict_resolution_accuracy=0.0,
         stale_memory_usage_rate=0.0,
+        recall_by_type={t: 0.0 for t in EVAL_TYPES},
+        precision_by_type={t: 0.0 for t in EVAL_TYPES},
+        storage_rate_by_type={t: 0.0 for t in EVAL_TYPES},
+        conflict_rate_by_type={t: 0.0 for t in EVAL_TYPES},
+        retrieval_top1_over_time=[],
+        conflict_accumulation_rate=0.0,
+        goal_precision_strong=0.0,
+        goal_recall_strong=0.0,
+        weak_goal_rate=0.0,
+        false_goal_from_wish_rate=0.0,
+        false_goal_from_opinion_rate=0.0,
+        false_goal_from_temporary_desire_rate=0.0,
+        goal_intrusion_rate_in_retrieval_top1=0.0,
     )
 
 
@@ -341,6 +527,21 @@ def _memory_type_from_label(label: str) -> MemoryType | None:
         return MemoryType.EPISODIC
     if normalized == "question":
         return MemoryType.WORKING
+    return None
+
+
+def _memory_eval_type(memory: MemoryItem) -> str | None:
+    tags = {tag.lower() for tag in memory.tags}
+    if "goal" in tags or memory.content.startswith("User goal:"):
+        return "goal"
+    if "fact" in tags or memory.content.startswith("User fact:"):
+        return "fact"
+    if "preference" in tags or memory.content.startswith("User preference:"):
+        return "preference"
+    if "commitment" in tags or memory.content.startswith("User commitment:"):
+        return "commitment"
+    if "event" in tags or memory.content.startswith("User event:"):
+        return "event"
     return None
 
 
@@ -403,6 +604,18 @@ def _retrieval_degradation(
     return max(0.0, early_rate - late_rate)
 
 
+def _retrieval_top1_over_time(long_top1_by_turn: dict[int, list[int]]) -> list[float]:
+    if not long_top1_by_turn:
+        return []
+    series: list[float] = []
+    for turn in sorted(long_top1_by_turn):
+        values = long_top1_by_turn[turn]
+        if not values:
+            continue
+        series.append(sum(values) / len(values))
+    return series
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate Lorenzo memory pipeline vs baseline")
     parser.add_argument("--config", type=str, default="config.example.toml")
@@ -430,11 +643,34 @@ def main() -> None:
     print(f"retrieval_degradation_over_time={memory_metrics.retrieval_degradation_over_time:.3f}")
     print(f"merge_activation_rate={memory_metrics.merge_activation_rate:.3f}")
     print(f"false_merge_rate={memory_metrics.false_merge_rate:.3f}")
+    print(f"merge_false_reject_rate={memory_metrics.merge_false_reject_rate:.3f}")
+    print(f"merge_candidate_similarity_avg={memory_metrics.merge_candidate_similarity_avg:.3f}")
+    print(f"merge_rejected_reason={json.dumps(memory_metrics.merge_rejected_reason, ensure_ascii=False)}")
+    print(f"rejected_count_by_type={json.dumps(memory_metrics.rejected_count_by_type, ensure_ascii=False)}")
     print(f"merge_success_count={memory_metrics.merge_success_count}")
     print(f"merge_rejected_count={memory_metrics.merge_rejected_count}")
     print(f"conflict_resolution_count={memory_metrics.conflict_resolution_count}")
     print(f"conflict_resolution_accuracy={memory_metrics.conflict_resolution_accuracy:.3f}")
     print(f"stale_memory_usage_rate={memory_metrics.stale_memory_usage_rate:.3f}")
+    print(f"conflict_accumulation_rate={memory_metrics.conflict_accumulation_rate:.3f}")
+    print(f"recall_by_type={json.dumps(memory_metrics.recall_by_type, ensure_ascii=False)}")
+    print(f"precision_by_type={json.dumps(memory_metrics.precision_by_type, ensure_ascii=False)}")
+    print(f"storage_rate_by_type={json.dumps(memory_metrics.storage_rate_by_type, ensure_ascii=False)}")
+    print(f"conflict_rate_by_type={json.dumps(memory_metrics.conflict_rate_by_type, ensure_ascii=False)}")
+    print(f"retrieval_top1_over_time={json.dumps(memory_metrics.retrieval_top1_over_time, ensure_ascii=False)}")
+    print(f"goal_precision_strong={memory_metrics.goal_precision_strong:.3f}")
+    print(f"goal_recall_strong={memory_metrics.goal_recall_strong:.3f}")
+    print(f"weak_goal_rate={memory_metrics.weak_goal_rate:.3f}")
+    print(f"false_goal_from_wish_rate={memory_metrics.false_goal_from_wish_rate:.3f}")
+    print(f"false_goal_from_opinion_rate={memory_metrics.false_goal_from_opinion_rate:.3f}")
+    print(
+        "false_goal_from_temporary_desire_rate="
+        f"{memory_metrics.false_goal_from_temporary_desire_rate:.3f}"
+    )
+    print(
+        "goal_intrusion_rate_in_retrieval_top1="
+        f"{memory_metrics.goal_intrusion_rate_in_retrieval_top1:.3f}"
+    )
 
     print("\n[Baseline]")
     print(f"retrieval_hit_rate_top1={baseline_metrics.retrieval_hit_rate_top1:.3f}")
@@ -450,11 +686,34 @@ def main() -> None:
     print(f"retrieval_degradation_over_time={baseline_metrics.retrieval_degradation_over_time:.3f}")
     print(f"merge_activation_rate={baseline_metrics.merge_activation_rate:.3f}")
     print(f"false_merge_rate={baseline_metrics.false_merge_rate:.3f}")
+    print(f"merge_false_reject_rate={baseline_metrics.merge_false_reject_rate:.3f}")
+    print(f"merge_candidate_similarity_avg={baseline_metrics.merge_candidate_similarity_avg:.3f}")
+    print(f"merge_rejected_reason={json.dumps(baseline_metrics.merge_rejected_reason, ensure_ascii=False)}")
+    print(f"rejected_count_by_type={json.dumps(baseline_metrics.rejected_count_by_type, ensure_ascii=False)}")
     print(f"merge_success_count={baseline_metrics.merge_success_count}")
     print(f"merge_rejected_count={baseline_metrics.merge_rejected_count}")
     print(f"conflict_resolution_count={baseline_metrics.conflict_resolution_count}")
     print(f"conflict_resolution_accuracy={baseline_metrics.conflict_resolution_accuracy:.3f}")
     print(f"stale_memory_usage_rate={baseline_metrics.stale_memory_usage_rate:.3f}")
+    print(f"conflict_accumulation_rate={baseline_metrics.conflict_accumulation_rate:.3f}")
+    print(f"recall_by_type={json.dumps(baseline_metrics.recall_by_type, ensure_ascii=False)}")
+    print(f"precision_by_type={json.dumps(baseline_metrics.precision_by_type, ensure_ascii=False)}")
+    print(f"storage_rate_by_type={json.dumps(baseline_metrics.storage_rate_by_type, ensure_ascii=False)}")
+    print(f"conflict_rate_by_type={json.dumps(baseline_metrics.conflict_rate_by_type, ensure_ascii=False)}")
+    print(f"retrieval_top1_over_time={json.dumps(baseline_metrics.retrieval_top1_over_time, ensure_ascii=False)}")
+    print(f"goal_precision_strong={baseline_metrics.goal_precision_strong:.3f}")
+    print(f"goal_recall_strong={baseline_metrics.goal_recall_strong:.3f}")
+    print(f"weak_goal_rate={baseline_metrics.weak_goal_rate:.3f}")
+    print(f"false_goal_from_wish_rate={baseline_metrics.false_goal_from_wish_rate:.3f}")
+    print(f"false_goal_from_opinion_rate={baseline_metrics.false_goal_from_opinion_rate:.3f}")
+    print(
+        "false_goal_from_temporary_desire_rate="
+        f"{baseline_metrics.false_goal_from_temporary_desire_rate:.3f}"
+    )
+    print(
+        "goal_intrusion_rate_in_retrieval_top1="
+        f"{baseline_metrics.goal_intrusion_rate_in_retrieval_top1:.3f}"
+    )
 
 
 if __name__ == "__main__":

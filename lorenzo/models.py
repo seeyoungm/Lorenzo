@@ -66,6 +66,7 @@ class ProcessedInput:
     input_type: InputType
     input_types: list[InputType] = field(default_factory=list)
     entities: list[str] = field(default_factory=list)
+    goal_confidence: str = "none"
 
 
 @dataclass(slots=True)
