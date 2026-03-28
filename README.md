@@ -26,6 +26,28 @@ v1.3 beta:
 - Preserved precision and stale-memory safety
 - No false-positive reintroduction observed
 
+## v2-alpha Update
+
+Iterative Reasoning Engine (2-pass) 추가:
+- pass 1: 초기 retrieval + draft answer
+- pass 2: `original query + draft answer` 기반 re-retrieval + refinement
+- refinement trigger:
+  - low confidence
+  - conflicting memory
+  - insufficient supporting memory
+  - answer-memory mismatch
+- max iteration cap (`2~3`) 적용
+
+v2-alpha broad eval snapshot:
+- `retrieval_hit_rate_top1_with_fallback=0.898`
+- `fallback_harm_rate=0.000`
+- `false_positive_reintroduced_rate=0.000`
+- `stale_memory_usage_rate=0.000`
+- `conflict_resolution_accuracy=1.000`
+- `refinement_improvement_rate=0.746`
+- `answer_change_rate=0.746`
+- `iteration_gain_score=0.055`
+
 ## 핵심 특징
 
 - 모듈형 파이프라인
@@ -38,12 +60,15 @@ v1.3 beta:
 - 응답 생성 전 메모리 검색 필수 수행
 - 검색 점수: `embedding semantic + recency + importance + lexical fallback`
 - 검색 보강: `score normalization + intent/type alignment + access boost + conflict penalty + diversity penalty + retrieval_reason + embedding cache`
+- iterative reasoning:
+  - objective-routed refinement (`fact gap / preference mismatch / conflict / support completion`)
+  - error-focused re-query (problematic claim + unresolved memory type 기반)
 - 다국어 유사도 지원(한국어/영어 개념 정규화 기반)
 - memory type 구분: `episodic / semantic / working`
 - 저장 정책: `importance threshold(상향) + deduplication + pre-write semantic summary synthesis + type filter`
 - two-tier memory 정책:
   - `strong memory`: fully trusted memory
-  - `weak memory`: retrieval fallback 힌트 전용 memory (`weak_goal`, `weak_preference`)
+  - `weak memory`: retrieval fallback 힌트 전용 memory (`weak_goal`, `weak_preference`, `weak_fact`)
 - intent 경계 규칙 강화:
   - `goal`: `strong_goal / weak_goal` 구분(semantic 저장은 strong만)
     - strong 조건: 미래 지향 + 달성/변환 의도 + 비일시적 지속성
@@ -78,6 +103,7 @@ lorenzo/
     retriever.py
   reasoning/
     planner.py
+    iterative.py
   language/
     adapter.py
     backends.py
@@ -158,7 +184,7 @@ lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios
 
 평가셋 구성:
 - 기본: `sample_data/eval_scenarios.json`
-- 확장: `sample_data/eval_scenarios_broad.json` (380 시나리오, 100+ turn long session 포함)
+- 확장: `sample_data/eval_scenarios_broad.json` (536 시나리오, 100+ turn long session 포함)
 - goal 경계 전용: `sample_data/eval_scenarios_goal_refinement.json` (24 시나리오)
 - paraphrase / cross-language / misleading / conflicting memory / merge-stress / boundary 케이스 포함
 
@@ -201,6 +227,14 @@ lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios
 - `weak_memory_promotion_rate`
 - `false_positive_reintroduced_rate`
 - `goal_recall_recovery_rate`
+- `refinement_improvement_rate`
+- `conflict_detected_rate`
+- `answer_change_rate`
+- `iteration_gain_score`
+- `factual_refinement_gain`
+- `preference_alignment_gain`
+- `support_completion_gain`
+- `conflict_fix_rate`
 
 ## 구현 우선순위 매핑
 
