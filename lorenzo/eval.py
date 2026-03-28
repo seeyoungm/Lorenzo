@@ -518,6 +518,15 @@ def evaluate_memory_pipeline(
                             refinement_state=refinement_state,
                         )
                     )
+                if refinement_state.retrieval_improved_but_answer_worsened:
+                    failure_rows.append(
+                        _build_refinement_failure_row(
+                            scenario=scenario,
+                            bucket="retrieval_improved_but_answer_worsened",
+                            result=result,
+                            refinement_state=refinement_state,
+                        )
+                    )
                 if refinement_state.answer_changed_without_support_improvement:
                     failure_rows.append(
                         _build_refinement_failure_row(
@@ -790,6 +799,9 @@ def evaluate_memory_pipeline(
     )
     if failure_dump_path:
         _write_failure_dump(failure_dump_path, failure_rows)
+        summary = _summarize_failure_buckets(failure_rows)
+        _write_failure_bucket_summary(failure_dump_path, summary)
+        _print_failure_bucket_summary(summary)
 
     return EvalMetrics(
         retrieval_hit_rate_top1=retrieval_hit_rate_top1,
@@ -1145,6 +1157,57 @@ def _write_failure_dump(path: str | Path, rows: list[dict[str, object]]) -> None
     with target.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def _summarize_failure_buckets(rows: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    target_buckets = [
+        "unsupported_claims_remaining",
+        "answer_changed_but_support_not_improved",
+        "retrieval_improved_but_answer_worsened",
+    ]
+    summary: dict[str, dict[str, object]] = {}
+    for bucket in target_buckets:
+        bucket_rows = [row for row in rows if row.get("bucket") == bucket]
+        examples = [
+            {
+                "scenario_id": row.get("scenario_id"),
+                "session_id": row.get("session_id"),
+                "turn": row.get("turn"),
+                "user_input": row.get("user_input"),
+                "response": str(row.get("response", ""))[:200],
+            }
+            for row in bucket_rows[:3]
+        ]
+        summary[bucket] = {"count": len(bucket_rows), "examples": examples}
+    return summary
+
+
+def _write_failure_bucket_summary(
+    failure_dump_path: str | Path,
+    summary: dict[str, dict[str, object]],
+) -> None:
+    summary_path = Path(str(failure_dump_path) + ".summary.json")
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _print_failure_bucket_summary(summary: dict[str, dict[str, object]]) -> None:
+    print("\n[Failure Buckets]")
+    for bucket in [
+        "unsupported_claims_remaining",
+        "answer_changed_but_support_not_improved",
+        "retrieval_improved_but_answer_worsened",
+    ]:
+        info = summary.get(bucket, {})
+        count = int(info.get("count", 0))
+        print(f"{bucket}={count}")
+        for idx, example in enumerate(info.get("examples", []), start=1):
+            scenario_id = example.get("scenario_id", "")
+            user_input = str(example.get("user_input", ""))[:80]
+            print(f"  example{idx}: {scenario_id} | {user_input}")
 
 
 def main() -> None:

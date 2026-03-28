@@ -36,6 +36,7 @@ def _summary(
     contradicted_count: int,
     unsupported_count: int,
     preference_alignment_score: float = 1.0,
+    avg_evidence_strength: float = 0.5,
 ) -> VerificationSummary:
     return VerificationSummary(
         assessments=[],
@@ -45,6 +46,7 @@ def _summary(
         supported_count=0,
         contradicted_count=contradicted_count,
         unsupported_count=unsupported_count,
+        avg_evidence_strength=avg_evidence_strength,
     )
 
 
