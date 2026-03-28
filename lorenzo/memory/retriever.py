@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha1
 import math
@@ -10,6 +11,13 @@ from lorenzo.models import MemoryItem, MemoryType, RetrievedMemory
 
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9가-힣]+")
+
+
+@dataclass(slots=True)
+class FallbackThresholdPolicy:
+    similarity_threshold: float
+    score_threshold: float
+    alignment_threshold: float
 
 
 class MemoryRetriever:
@@ -63,6 +71,13 @@ class MemoryRetriever:
             0.0,
             min(1.0, weak_override_type_alignment_threshold),
         )
+        self.fallback_policy_table = self._build_fallback_policy_table()
+        self.weak_override_policy = {
+            "low_score_threshold": self.weak_override_low_score_threshold,
+            "high_similarity_threshold": self.weak_override_high_similarity_threshold,
+            "type_alignment_threshold": self.weak_override_type_alignment_threshold,
+        }
+        self.intent_scoring_policy = self._build_intent_scoring_policy()
 
         total = (
             self.similarity_weight
@@ -177,6 +192,7 @@ class MemoryRetriever:
             return []
 
         intent = intent or self._infer_intent(query)
+        intent_policy = self._intent_scoring_policy(intent)
         recall_mode = self._is_recall_intent(intent)
         query_fact_key = self._fact_query_key(query) if intent == "fact_recall" else ""
         query_embedding = self._get_query_embedding(query)
@@ -255,48 +271,34 @@ class MemoryRetriever:
             fact_key_penalty = 0.0
             fact_value_quality_bonus = 0.0
             if recall_mode:
-                exact_weight = 0.16
-                recency_weight = 0.05
-                type_weight = 0.06
-                if intent == "fact_recall":
-                    exact_weight = 0.20
-                    recency_weight = 0.10
-                    type_weight = 0.08
-                elif intent == "preference_recall":
-                    exact_weight = 0.14
-                    recency_weight = 0.04
-                    type_weight = 0.08
-                elif intent == "goal_recall":
-                    exact_weight = 0.14
-                    recency_weight = 0.05
-                    type_weight = 0.07
+                exact_weight = float(intent_policy["recall_exact_weight"])
+                recency_weight = float(intent_policy["recall_recency_weight"])
+                type_weight = float(intent_policy["recall_type_weight"])
                 recall_exact_bonus = exact_norm[idx] * exact_weight
                 recall_recency_bonus = recency_norm[idx] * recency_weight
                 recall_type_bonus = type_alignment_norm[idx] * type_weight
 
             if fallback_active and tier == "weak":
-                if intent == "preference_recall" and "preference" in tags:
-                    intent_weak_boost = 0.14
-                elif intent == "fact_recall" and "fact" in tags:
-                    intent_weak_boost = 0.14
-                elif intent == "goal_recall" and "goal" in tags:
-                    intent_weak_boost = 0.18
+                boost_tag = str(intent_policy["weak_boost_tag"])
+                if boost_tag and boost_tag in tags:
+                    intent_weak_boost = float(intent_policy["weak_boost"])
 
-            if intent == "goal_recall" and "goal" in tags:
-                intent_tag_bonus = 0.10
-            elif intent == "preference_recall" and "preference" in tags:
-                intent_tag_bonus = 0.08
-            elif intent == "fact_recall" and "fact" in tags:
-                recency_factor = 0.20 if tier == "weak" else 0.16
-                intent_tag_bonus = recency_norm[idx] * recency_factor
+            tag_bonus_tag = str(intent_policy["tag_bonus_tag"])
+            if tag_bonus_tag and tag_bonus_tag in tags:
+                bonus_mode = str(intent_policy["tag_bonus_mode"])
+                if bonus_mode == "constant":
+                    intent_tag_bonus = float(intent_policy["tag_bonus_value"])
+                elif bonus_mode == "recency_scaled":
+                    if tier == "weak":
+                        recency_factor = float(intent_policy["tag_bonus_weak_recency_factor"])
+                    else:
+                        recency_factor = float(intent_policy["tag_bonus_strong_recency_factor"])
+                    intent_tag_bonus = recency_norm[idx] * recency_factor
 
             if tier == "strong":
-                if intent == "preference_recall" and "preference" not in tags:
-                    strong_mismatch_penalty = 0.06
-                elif intent == "fact_recall" and "fact" not in tags:
-                    strong_mismatch_penalty = 0.06
-                elif intent == "goal_recall" and "goal" not in tags:
-                    strong_mismatch_penalty = 0.12
+                mismatch_tag = str(intent_policy["strong_mismatch_tag"])
+                if mismatch_tag and mismatch_tag not in tags:
+                    strong_mismatch_penalty = float(intent_policy["strong_mismatch_penalty"])
 
             if intent == "fact_recall" and query_fact_key:
                 candidate_fact_key = self._fact_memory_key(memory)
@@ -404,17 +406,21 @@ class MemoryRetriever:
         if strong_top_score < 0.0:
             return ranked
 
-        if strong_top_score >= self.weak_override_low_score_threshold:
+        low_score_threshold = float(self.weak_override_policy["low_score_threshold"])
+        high_similarity_threshold = float(self.weak_override_policy["high_similarity_threshold"])
+        type_alignment_threshold = float(self.weak_override_policy["type_alignment_threshold"])
+
+        if strong_top_score >= low_score_threshold:
             self.last_weak_override_blocked_by_low_score_count += 1
             return ranked
 
         best_weak = max(weak_candidates, key=lambda item: item.similarity_score)
-        if best_weak.similarity_score <= self.weak_override_high_similarity_threshold:
+        if best_weak.similarity_score <= high_similarity_threshold:
             self.last_weak_override_blocked_by_similarity_count += 1
             return ranked
 
         chosen_alignment = self._type_alignment_score(intent, best_weak.memory)
-        if chosen_alignment < self.weak_override_type_alignment_threshold:
+        if chosen_alignment < type_alignment_threshold:
             self.last_weak_override_blocked_by_type_alignment_count += 1
             return ranked
 
@@ -543,21 +549,99 @@ class MemoryRetriever:
         top = strong_ranked[0]
         second = strong_ranked[1] if len(strong_ranked) > 1 else None
         intent = intent or self._infer_intent(query)
-        similarity_threshold = self.fallback_similarity_threshold
-        score_threshold = self.fallback_score_threshold
-        alignment_threshold = 0.70
-        if intent in {"goal_recall", "preference_recall", "fact_recall", "memory_recall_summary"}:
-            similarity_threshold = min(1.0, similarity_threshold + 0.05)
-            score_threshold += 0.03
-            alignment_threshold = 0.82
+        thresholds = self._fallback_thresholds_for_intent(intent)
 
-        low_similarity = top.similarity_score < similarity_threshold
-        low_score = top.total_score < score_threshold
+        low_similarity = top.similarity_score < thresholds.similarity_threshold
+        low_score = top.total_score < thresholds.score_threshold
         ambiguous_margin = second is not None and (
             (top.total_score - second.total_score) < self.fallback_min_margin
         )
-        low_alignment = self._type_alignment_score(intent, top.memory) < alignment_threshold
+        low_alignment = self._type_alignment_score(intent, top.memory) < thresholds.alignment_threshold
         return low_similarity or low_score or ambiguous_margin or low_alignment
+
+    def _build_fallback_policy_table(self) -> dict[str, FallbackThresholdPolicy]:
+        recall_policy = FallbackThresholdPolicy(
+            similarity_threshold=min(1.0, self.fallback_similarity_threshold + 0.05),
+            score_threshold=self.fallback_score_threshold + 0.03,
+            alignment_threshold=0.82,
+        )
+        default_policy = FallbackThresholdPolicy(
+            similarity_threshold=self.fallback_similarity_threshold,
+            score_threshold=self.fallback_score_threshold,
+            alignment_threshold=0.70,
+        )
+        return {
+            "default": default_policy,
+            "goal_recall": recall_policy,
+            "preference_recall": recall_policy,
+            "fact_recall": recall_policy,
+            "memory_recall_summary": recall_policy,
+        }
+
+    def _fallback_thresholds_for_intent(self, intent: str) -> FallbackThresholdPolicy:
+        return self.fallback_policy_table.get(intent, self.fallback_policy_table["default"])
+
+    def _build_intent_scoring_policy(self) -> dict[str, dict[str, float | str]]:
+        default = {
+            "recall_exact_weight": 0.16,
+            "recall_recency_weight": 0.05,
+            "recall_type_weight": 0.06,
+            "weak_boost_tag": "",
+            "weak_boost": 0.0,
+            "tag_bonus_tag": "",
+            "tag_bonus_mode": "constant",
+            "tag_bonus_value": 0.0,
+            "tag_bonus_weak_recency_factor": 0.0,
+            "tag_bonus_strong_recency_factor": 0.0,
+            "strong_mismatch_tag": "",
+            "strong_mismatch_penalty": 0.0,
+        }
+        return {
+            "default": default,
+            "goal_recall": {
+                **default,
+                "recall_exact_weight": 0.14,
+                "recall_recency_weight": 0.05,
+                "recall_type_weight": 0.07,
+                "weak_boost_tag": "goal",
+                "weak_boost": 0.18,
+                "tag_bonus_tag": "goal",
+                "tag_bonus_mode": "constant",
+                "tag_bonus_value": 0.10,
+                "strong_mismatch_tag": "goal",
+                "strong_mismatch_penalty": 0.12,
+            },
+            "preference_recall": {
+                **default,
+                "recall_exact_weight": 0.14,
+                "recall_recency_weight": 0.04,
+                "recall_type_weight": 0.08,
+                "weak_boost_tag": "preference",
+                "weak_boost": 0.14,
+                "tag_bonus_tag": "preference",
+                "tag_bonus_mode": "constant",
+                "tag_bonus_value": 0.08,
+                "strong_mismatch_tag": "preference",
+                "strong_mismatch_penalty": 0.06,
+            },
+            "fact_recall": {
+                **default,
+                "recall_exact_weight": 0.20,
+                "recall_recency_weight": 0.10,
+                "recall_type_weight": 0.08,
+                "weak_boost_tag": "fact",
+                "weak_boost": 0.14,
+                "tag_bonus_tag": "fact",
+                "tag_bonus_mode": "recency_scaled",
+                "tag_bonus_weak_recency_factor": 0.20,
+                "tag_bonus_strong_recency_factor": 0.16,
+                "strong_mismatch_tag": "fact",
+                "strong_mismatch_penalty": 0.06,
+            },
+        }
+
+    def _intent_scoring_policy(self, intent: str) -> dict[str, float | str]:
+        return self.intent_scoring_policy.get(intent, self.intent_scoring_policy["default"])
 
     def _enforce_semantic_dominance(self, min_semantic_weight: float) -> None:
         if self.similarity_weight >= min_semantic_weight:
