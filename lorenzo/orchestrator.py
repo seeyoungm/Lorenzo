@@ -16,7 +16,7 @@ from lorenzo.interfaces import (
 from lorenzo.language import LanguageAdapter
 from lorenzo.memory import JsonlMemoryStore, MemoryRetriever
 from lorenzo.models import InputType, MemoryItem, MemoryType, ProcessedInput, TurnResult
-from lorenzo.reasoning import ReasoningPlanner
+from lorenzo.reasoning import IterativeReasoningEngine, ReasoningPlanner
 
 
 @dataclass(slots=True)
@@ -49,6 +49,12 @@ class UpdateTelemetry:
     weak_memory_promotions: int = 0
     weak_memory_retrieval_hits: int = 0
     retrieval_turns: int = 0
+    refinement_attempts: int = 0
+    refinement_triggered_count: int = 0
+    refinement_improvement_count: int = 0
+    refinement_conflict_detected_count: int = 0
+    refinement_answer_changed_count: int = 0
+    iteration_gain_total: float = 0.0
 
 
 @dataclass(slots=True)
@@ -71,6 +77,7 @@ class LorenzoOrchestrator:
         semantic_merge_similarity_threshold: float = 0.78,
         merge_confidence_threshold: float = 0.82,
         weak_promotion_similarity_threshold: float = 0.60,
+        iterative_reasoning_max_iterations: int = 2,
     ) -> None:
         self.modules = modules
         self.top_k = top_k
@@ -79,6 +86,9 @@ class LorenzoOrchestrator:
         self.semantic_merge_similarity_threshold = semantic_merge_similarity_threshold
         self.merge_confidence_threshold = merge_confidence_threshold
         self.weak_promotion_similarity_threshold = weak_promotion_similarity_threshold
+        self._iterative_reasoning_engine = IterativeReasoningEngine(
+            max_iterations=iterative_reasoning_max_iterations
+        )
         self._telemetry = UpdateTelemetry()
 
     @classmethod
@@ -121,25 +131,55 @@ class LorenzoOrchestrator:
         processed = self.modules.input_processor.process(user_input)
 
         existing_memories = self.modules.memory_store.list_all()
-        retrieved = self.modules.memory_retriever.retrieve(
+        retrieved_pass1 = self.modules.memory_retriever.retrieve(
             query=processed.raw_text,
             memories=existing_memories,
             top_k=self.top_k,
             mode="auto",
         )
+        draft_plan = self.modules.reasoning_planner.plan(processed, retrieved_pass1)
+        draft_response = self.modules.language_adapter.generate(
+            user_input=processed.raw_text,
+            processed=processed,
+            retrieved=retrieved_pass1,
+            plan=draft_plan,
+        )
+        refinement = self._iterative_reasoning_engine.refine(
+            user_input=processed.raw_text,
+            processed=processed,
+            existing_memories=existing_memories,
+            initial_retrieved=retrieved_pass1,
+            draft_plan=draft_plan,
+            draft_response=draft_response,
+            memory_retriever=self.modules.memory_retriever,
+            reasoning_planner=self.modules.reasoning_planner,
+            language_adapter=self.modules.language_adapter,
+            top_k=self.top_k,
+        )
+
+        # Keep primary retrieval semantics stable for storage/eval compatibility.
+        retrieved = retrieved_pass1
+        plan = draft_plan
+        if refinement.refinement_triggered:
+            plan = refinement.plan
+        response = refinement.response
+
         self._telemetry.retrieval_turns += 1
+        self._telemetry.refinement_attempts += 1
+        if refinement.refinement_triggered:
+            self._telemetry.refinement_triggered_count += 1
+        if refinement.conflict_detected:
+            self._telemetry.refinement_conflict_detected_count += 1
+        if refinement.answer_changed:
+            self._telemetry.refinement_answer_changed_count += 1
+        if refinement.iteration_gain > 0:
+            self._telemetry.refinement_improvement_count += 1
+        self._telemetry.iteration_gain_total += refinement.iteration_gain
+
         if any(self._memory_tier(item.memory) == "weak" for item in retrieved):
             self._telemetry.weak_memory_retrieval_hits += 1
         if self._apply_retrieval_feedback(existing_memories, retrieved):
             self.modules.memory_store.replace_all(existing_memories)
-
-        plan = self.modules.reasoning_planner.plan(processed, retrieved)
-        response = self.modules.language_adapter.generate(
-            user_input=processed.raw_text,
-            processed=processed,
-            retrieved=retrieved,
-            plan=plan,
-        )
 
         self._update_memories(processed)
         return TurnResult(
@@ -175,6 +215,12 @@ class LorenzoOrchestrator:
             weak_memory_promotions=self._telemetry.weak_memory_promotions,
             weak_memory_retrieval_hits=self._telemetry.weak_memory_retrieval_hits,
             retrieval_turns=self._telemetry.retrieval_turns,
+            refinement_attempts=self._telemetry.refinement_attempts,
+            refinement_triggered_count=self._telemetry.refinement_triggered_count,
+            refinement_improvement_count=self._telemetry.refinement_improvement_count,
+            refinement_conflict_detected_count=self._telemetry.refinement_conflict_detected_count,
+            refinement_answer_changed_count=self._telemetry.refinement_answer_changed_count,
+            iteration_gain_total=self._telemetry.iteration_gain_total,
         )
 
     def _update_memories(self, processed: ProcessedInput) -> None:

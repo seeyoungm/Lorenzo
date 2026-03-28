@@ -97,6 +97,10 @@ class EvalMetrics:
     weak_override_blocked_by_similarity_count: int
     weak_override_blocked_by_type_alignment_count: int
     weak_override_success_count: int
+    refinement_improvement_rate: float
+    conflict_detected_rate: float
+    answer_change_rate: float
+    iteration_gain_score: float
 
 
 class BaselineEngine:
@@ -212,6 +216,11 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     weak_override_blocked_by_similarity_count = 0
     weak_override_blocked_by_type_alignment_count = 0
     weak_override_success_count = 0
+    refinement_attempt_total = 0
+    refinement_improvement_total = 0
+    refinement_conflict_detected_total = 0
+    refinement_answer_change_total = 0
+    iteration_gain_total = 0.0
     recall_query_total_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
     weak_coverage_hits_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
 
@@ -389,6 +398,24 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
             )
             weak_memory_promotion_count += (
                 after_telemetry.weak_memory_promotions - before_telemetry.weak_memory_promotions
+            )
+            refinement_attempt_total += (
+                after_telemetry.refinement_attempts - before_telemetry.refinement_attempts
+            )
+            refinement_improvement_total += (
+                after_telemetry.refinement_improvement_count
+                - before_telemetry.refinement_improvement_count
+            )
+            refinement_conflict_detected_total += (
+                after_telemetry.refinement_conflict_detected_count
+                - before_telemetry.refinement_conflict_detected_count
+            )
+            refinement_answer_change_total += (
+                after_telemetry.refinement_answer_changed_count
+                - before_telemetry.refinement_answer_changed_count
+            )
+            iteration_gain_total += (
+                after_telemetry.iteration_gain_total - before_telemetry.iteration_gain_total
             )
 
             top1_text = (result.retrieved_memories[0].memory.content if result.retrieved_memories else "").lower()
@@ -609,6 +636,10 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     )
     weak_override_trigger_rate = _safe_div(weak_override_trigger_count, retrieval_total)
     weak_override_candidate_rate = _safe_div(weak_override_candidate_turn_count, retrieval_total)
+    refinement_improvement_rate = _safe_div(refinement_improvement_total, refinement_attempt_total)
+    conflict_detected_rate = _safe_div(refinement_conflict_detected_total, refinement_attempt_total)
+    answer_change_rate = _safe_div(refinement_answer_change_total, refinement_attempt_total)
+    iteration_gain_score = _safe_div(iteration_gain_total, refinement_attempt_total)
 
     return EvalMetrics(
         retrieval_hit_rate_top1=retrieval_hit_rate_top1,
@@ -669,6 +700,10 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         weak_override_blocked_by_similarity_count=weak_override_blocked_by_similarity_count,
         weak_override_blocked_by_type_alignment_count=weak_override_blocked_by_type_alignment_count,
         weak_override_success_count=weak_override_success_count,
+        refinement_improvement_rate=refinement_improvement_rate,
+        conflict_detected_rate=conflict_detected_rate,
+        answer_change_rate=answer_change_rate,
+        iteration_gain_score=iteration_gain_score,
     )
 
 
@@ -740,6 +775,10 @@ def evaluate_baseline(scenarios: list[EvalScenario]) -> EvalMetrics:
         weak_override_blocked_by_similarity_count=0,
         weak_override_blocked_by_type_alignment_count=0,
         weak_override_success_count=0,
+        refinement_improvement_rate=0.0,
+        conflict_detected_rate=0.0,
+        answer_change_rate=0.0,
+        iteration_gain_score=0.0,
     )
 
 
@@ -995,6 +1034,10 @@ def main() -> None:
         f"{memory_metrics.weak_override_blocked_by_type_alignment_count}"
     )
     print(f"weak_override_success_count={memory_metrics.weak_override_success_count}")
+    print(f"refinement_improvement_rate={memory_metrics.refinement_improvement_rate:.3f}")
+    print(f"conflict_detected_rate={memory_metrics.conflict_detected_rate:.3f}")
+    print(f"answer_change_rate={memory_metrics.answer_change_rate:.3f}")
+    print(f"iteration_gain_score={memory_metrics.iteration_gain_score:.3f}")
 
     print("\n[Baseline]")
     print(f"retrieval_hit_rate_top1={baseline_metrics.retrieval_hit_rate_top1:.3f}")
@@ -1079,6 +1122,10 @@ def main() -> None:
         f"{baseline_metrics.weak_override_blocked_by_type_alignment_count}"
     )
     print(f"weak_override_success_count={baseline_metrics.weak_override_success_count}")
+    print(f"refinement_improvement_rate={baseline_metrics.refinement_improvement_rate:.3f}")
+    print(f"conflict_detected_rate={baseline_metrics.conflict_detected_rate:.3f}")
+    print(f"answer_change_rate={baseline_metrics.answer_change_rate:.3f}")
+    print(f"iteration_gain_score={baseline_metrics.iteration_gain_score:.3f}")
 
 
 if __name__ == "__main__":

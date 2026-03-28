@@ -99,3 +99,6 @@ def test_goal_refinement_metrics_are_reported(tmp_path: Path) -> None:
     assert metrics.weak_override_blocked_by_similarity_count >= 0
     assert metrics.weak_override_blocked_by_type_alignment_count >= 0
     assert metrics.weak_override_success_count >= 0
+    assert 0.0 <= metrics.refinement_improvement_rate <= 1.0
+    assert 0.0 <= metrics.conflict_detected_rate <= 1.0
+    assert 0.0 <= metrics.answer_change_rate <= 1.0
