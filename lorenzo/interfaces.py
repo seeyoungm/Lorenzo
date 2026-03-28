@@ -25,7 +25,14 @@ class MemoryStorePort(Protocol):
 
 
 class MemoryRetrieverPort(Protocol):
-    def retrieve(self, query: str, memories: list[MemoryItem], top_k: int = 5) -> list[RetrievedMemory]:
+    def retrieve(
+        self,
+        query: str,
+        memories: list[MemoryItem],
+        top_k: int = 5,
+        now=None,
+        mode: str = "auto",
+    ) -> list[RetrievedMemory]:
         ...
 
     def text_similarity(self, left: str, right: str) -> float:

@@ -5738,5 +5738,2219 @@
     "expected_retrieval_keywords": [],
     "expected_conflict_winner_keywords": [],
     "stale_conflict_keywords": []
+  },
+  {
+    "id": "rb_wp_a_1",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 1,
+    "category": "rebalance_weak_preference",
+    "user_input": "가능하면 오늘은 답변 톤을 짧게 해주면 좋겠어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_2",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 2,
+    "category": "rebalance_weak_preference",
+    "user_input": "지금은 구현 상태를 먼저 확인하자",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_3",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 3,
+    "category": "rebalance_weak_preference",
+    "user_input": "For now, concise bullet style would be better.",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_4",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 4,
+    "category": "rebalance_weak_preference",
+    "user_input": "방금 내용은 테스트 맥락이야",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_5",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 5,
+    "category": "rebalance_weak_preference",
+    "user_input": "이번에는 설명 형식이면 좋겠어, 길지 않았으면 해",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_6",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 6,
+    "category": "rebalance_weak_preference",
+    "user_input": "내 선호가 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "형식",
+      "길지",
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_7",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 7,
+    "category": "rebalance_weak_preference",
+    "user_input": "What preference did I mention?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "style",
+      "concise",
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_8",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 8,
+    "category": "rebalance_weak_preference",
+    "user_input": "장기 목표는 메모리 AI 완성이다",
+    "should_store": true,
+    "expected_store_type": "goal",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_9",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 9,
+    "category": "rebalance_weak_preference",
+    "user_input": "내 선호 다시 알려줘",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "형식",
+      "짧",
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_10",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 10,
+    "category": "rebalance_weak_preference",
+    "user_input": "오늘 회의는 3시에 있었어",
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_11",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 11,
+    "category": "rebalance_weak_preference",
+    "user_input": "선호 스타일 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "형식",
+      "짧",
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_a_12",
+    "session_id": "rebalance_weak_preference_a",
+    "turn": 12,
+    "category": "rebalance_weak_preference",
+    "user_input": "설명은 중간 길이로 해볼게",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_a"
+  },
+  {
+    "id": "rb_wp_b_1",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 1,
+    "category": "rebalance_weak_preference",
+    "user_input": "요즘은 답변이 짧게 해주면 훨씬 좋아",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_2",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 2,
+    "category": "rebalance_weak_preference",
+    "user_input": "핵심만 남겨도 괜찮아",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_3",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 3,
+    "category": "rebalance_weak_preference",
+    "user_input": "답변 형식이면 좋겠고 가능하면 bullet 위주로 부탁해",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_4",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 4,
+    "category": "rebalance_weak_preference",
+    "user_input": "I may prefer compact style for now.",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_5",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 5,
+    "category": "rebalance_weak_preference",
+    "user_input": "내가 선호하던 답변 스타일이 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "compact",
+      "bullet",
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_6",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 6,
+    "category": "rebalance_weak_preference",
+    "user_input": "latest preference?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "compact",
+      "bullet",
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_7",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 7,
+    "category": "rebalance_weak_preference",
+    "user_input": "다음은 일반 잡담이야",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_8",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 8,
+    "category": "rebalance_weak_preference",
+    "user_input": "내 선호가 뭐야?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "compact",
+      "bullet",
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_9",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 9,
+    "category": "rebalance_weak_preference",
+    "user_input": "목표는 장기 기억 아키텍처 완성이다",
+    "should_store": true,
+    "expected_store_type": "goal",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_10",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 10,
+    "category": "rebalance_weak_preference",
+    "user_input": "선호 다시 recall 해줘",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "compact",
+      "bullet",
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_11",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 11,
+    "category": "rebalance_weak_preference",
+    "user_input": "회의 일정은 내일 2시야",
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wp_b_12",
+    "session_id": "rebalance_weak_preference_b",
+    "turn": 12,
+    "category": "rebalance_weak_preference",
+    "user_input": "내 선호 확인",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "compact",
+      "bullet",
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_preference_b"
+  },
+  {
+    "id": "rb_wf_a_1",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 1,
+    "category": "rebalance_weak_fact",
+    "user_input": "예산은 아마 120 정도였던 것 같아",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_2",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 2,
+    "category": "rebalance_weak_fact",
+    "user_input": "확정 수치는 아니야",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_3",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 3,
+    "category": "rebalance_weak_fact",
+    "user_input": "I think it was around 130 budget.",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_4",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 4,
+    "category": "rebalance_weak_fact",
+    "user_input": "What was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "130"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_5",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 5,
+    "category": "rebalance_weak_fact",
+    "user_input": "현재 예산이 얼마였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "130"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_6",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 6,
+    "category": "rebalance_weak_fact",
+    "user_input": "예산은 대충 140 정도였던 듯해",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_7",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 7,
+    "category": "rebalance_weak_fact",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "140"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_8",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 8,
+    "category": "rebalance_weak_fact",
+    "user_input": "내 최신 예산 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "140"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_9",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 9,
+    "category": "rebalance_weak_fact",
+    "user_input": "이번 주 회의는 수요일 4시였어",
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_10",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 10,
+    "category": "rebalance_weak_fact",
+    "user_input": "budget recall",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "140"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_11",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 11,
+    "category": "rebalance_weak_fact",
+    "user_input": "아직 대략치야",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_a_12",
+    "session_id": "rebalance_weak_fact_a",
+    "turn": 12,
+    "category": "rebalance_weak_fact",
+    "user_input": "What was the budget value?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "140"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_a"
+  },
+  {
+    "id": "rb_wf_b_1",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 1,
+    "category": "rebalance_weak_fact",
+    "user_input": "기억으론 예산이 200 근처였어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_2",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 2,
+    "category": "rebalance_weak_fact",
+    "user_input": "예산은 maybe 210쯤이었던 듯해",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_3",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 3,
+    "category": "rebalance_weak_fact",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "210"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_4",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 4,
+    "category": "rebalance_weak_fact",
+    "user_input": "내 최신 예산 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "210"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_5",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 5,
+    "category": "rebalance_weak_fact",
+    "user_input": "I think it was around 220.",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_6",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 6,
+    "category": "rebalance_weak_fact",
+    "user_input": "What was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "220"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_7",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 7,
+    "category": "rebalance_weak_fact",
+    "user_input": "현재 예산 얼마?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "220"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_8",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 8,
+    "category": "rebalance_weak_fact",
+    "user_input": "잡음 문장 하나 추가",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_9",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 9,
+    "category": "rebalance_weak_fact",
+    "user_input": "budget recall now",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "220"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_10",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 10,
+    "category": "rebalance_weak_fact",
+    "user_input": "meeting은 목요일 오전이었어",
+    "should_store": true,
+    "expected_store_type": "event",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_11",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 11,
+    "category": "rebalance_weak_fact",
+    "user_input": "what is latest budget now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "220"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_wf_b_12",
+    "session_id": "rebalance_weak_fact_b",
+    "turn": 12,
+    "category": "rebalance_weak_fact",
+    "user_input": "수치가 완전 확정은 아냐",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_weak_fact_b"
+  },
+  {
+    "id": "rb_mx_a_1",
+    "session_id": "rebalance_mixed_a",
+    "turn": 1,
+    "category": "rebalance_mixed",
+    "user_input": "장기적으로 memory AI를 완성하는 게 목표야",
+    "should_store": true,
+    "expected_store_type": "goal",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_2",
+    "session_id": "rebalance_mixed_a",
+    "turn": 2,
+    "category": "rebalance_mixed",
+    "user_input": "가능하면 답변은 짧게 해주면 좋겠어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_3",
+    "session_id": "rebalance_mixed_a",
+    "turn": 3,
+    "category": "rebalance_mixed",
+    "user_input": "예산은 아마 95 정도였던 것 같아",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_4",
+    "session_id": "rebalance_mixed_a",
+    "turn": 4,
+    "category": "rebalance_mixed",
+    "user_input": "What is my objective?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_5",
+    "session_id": "rebalance_mixed_a",
+    "turn": 5,
+    "category": "rebalance_mixed",
+    "user_input": "내 선호가 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_6",
+    "session_id": "rebalance_mixed_a",
+    "turn": 6,
+    "category": "rebalance_mixed",
+    "user_input": "What was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "95"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_7",
+    "session_id": "rebalance_mixed_a",
+    "turn": 7,
+    "category": "rebalance_mixed",
+    "user_input": "i think it was around 105 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_8",
+    "session_id": "rebalance_mixed_a",
+    "turn": 8,
+    "category": "rebalance_mixed",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "105"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_9",
+    "session_id": "rebalance_mixed_a",
+    "turn": 9,
+    "category": "rebalance_mixed",
+    "user_input": "선호 스타일 다시 알려줘",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "짧"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_10",
+    "session_id": "rebalance_mixed_a",
+    "turn": 10,
+    "category": "rebalance_mixed",
+    "user_input": "goal remind me",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_11",
+    "session_id": "rebalance_mixed_a",
+    "turn": 11,
+    "category": "rebalance_mixed",
+    "user_input": "대화 잡음",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_a_12",
+    "session_id": "rebalance_mixed_a",
+    "turn": 12,
+    "category": "rebalance_mixed",
+    "user_input": "내 최신 예산은?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "105"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_a"
+  },
+  {
+    "id": "rb_mx_b_1",
+    "session_id": "rebalance_mixed_b",
+    "turn": 1,
+    "category": "rebalance_mixed",
+    "user_input": "장기 목표는 모듈형 기억 시스템 완성이다",
+    "should_store": true,
+    "expected_store_type": "goal",
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_2",
+    "session_id": "rebalance_mixed_b",
+    "turn": 2,
+    "category": "rebalance_mixed",
+    "user_input": "이번엔 bullet이면 좋겠어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_3",
+    "session_id": "rebalance_mixed_b",
+    "turn": 3,
+    "category": "rebalance_mixed",
+    "user_input": "예산은 대충 150 근처였어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_4",
+    "session_id": "rebalance_mixed_b",
+    "turn": 4,
+    "category": "rebalance_mixed",
+    "user_input": "내 목표 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_5",
+    "session_id": "rebalance_mixed_b",
+    "turn": 5,
+    "category": "rebalance_mixed",
+    "user_input": "latest preference?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_6",
+    "session_id": "rebalance_mixed_b",
+    "turn": 6,
+    "category": "rebalance_mixed",
+    "user_input": "현재 예산이 얼마였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "150"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_7",
+    "session_id": "rebalance_mixed_b",
+    "turn": 7,
+    "category": "rebalance_mixed",
+    "user_input": "i think it was around 165 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_8",
+    "session_id": "rebalance_mixed_b",
+    "turn": 8,
+    "category": "rebalance_mixed",
+    "user_input": "what was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "165"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_9",
+    "session_id": "rebalance_mixed_b",
+    "turn": 9,
+    "category": "rebalance_mixed",
+    "user_input": "내 선호 다시",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_10",
+    "session_id": "rebalance_mixed_b",
+    "turn": 10,
+    "category": "rebalance_mixed",
+    "user_input": "objective again?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "goal",
+      "memory"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_11",
+    "session_id": "rebalance_mixed_b",
+    "turn": 11,
+    "category": "rebalance_mixed",
+    "user_input": "noise turn",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_mx_b_12",
+    "session_id": "rebalance_mixed_b",
+    "turn": 12,
+    "category": "rebalance_mixed",
+    "user_input": "latest budget now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "165"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_mixed_b"
+  },
+  {
+    "id": "rb_nd_a_1",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 1,
+    "category": "rebalance_noise_preference",
+    "user_input": "가능하면 설명은 짧게",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_2",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 2,
+    "category": "rebalance_noise_preference",
+    "user_input": "잡담: 오늘 날씨 좋네",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_3",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 3,
+    "category": "rebalance_noise_preference",
+    "user_input": "스타일이면 좋겠어, 길지 않았으면",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_4",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 4,
+    "category": "rebalance_noise_preference",
+    "user_input": "잡담: 배고프다",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_5",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 5,
+    "category": "rebalance_noise_preference",
+    "user_input": "내 선호가 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "짧",
+      "길지"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_6",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 6,
+    "category": "rebalance_noise_preference",
+    "user_input": "random text about unrelated module",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_7",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 7,
+    "category": "rebalance_noise_preference",
+    "user_input": "latest preference?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "짧",
+      "길지"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_8",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 8,
+    "category": "rebalance_noise_preference",
+    "user_input": "I may prefer concise style for now",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_9",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 9,
+    "category": "rebalance_noise_preference",
+    "user_input": "What preference did I mention?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "concise",
+      "style"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_10",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 10,
+    "category": "rebalance_noise_preference",
+    "user_input": "noise noise",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_11",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 11,
+    "category": "rebalance_noise_preference",
+    "user_input": "내 최신 선호는?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "concise",
+      "style"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_a_12",
+    "session_id": "rebalance_noise_pref_a",
+    "turn": 12,
+    "category": "rebalance_noise_preference",
+    "user_input": "또 다른 잡담",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_a"
+  },
+  {
+    "id": "rb_nd_b_1",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 1,
+    "category": "rebalance_noise_preference",
+    "user_input": "for now, bullet style would be better",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_2",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 2,
+    "category": "rebalance_noise_preference",
+    "user_input": "irrelevant turn one",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_3",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 3,
+    "category": "rebalance_noise_preference",
+    "user_input": "이번엔 형식이면 좋겠어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_4",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 4,
+    "category": "rebalance_noise_preference",
+    "user_input": "irrelevant turn two",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_5",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 5,
+    "category": "rebalance_noise_preference",
+    "user_input": "내 선호 다시 알려줘",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "형식",
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_6",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 6,
+    "category": "rebalance_noise_preference",
+    "user_input": "irrelevant turn three",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_7",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 7,
+    "category": "rebalance_noise_preference",
+    "user_input": "what preference now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "형식",
+      "bullet"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_8",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 8,
+    "category": "rebalance_noise_preference",
+    "user_input": "요즘은 짧게 해주면 좋겠어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_9",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 9,
+    "category": "rebalance_noise_preference",
+    "user_input": "latest preference?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "짧게"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_10",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 10,
+    "category": "rebalance_noise_preference",
+    "user_input": "noise",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_11",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 11,
+    "category": "rebalance_noise_preference",
+    "user_input": "내 선호 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "짧게"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_nd_b_12",
+    "session_id": "rebalance_noise_pref_b",
+    "turn": 12,
+    "category": "rebalance_noise_preference",
+    "user_input": "noise end",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_noise_pref_b"
+  },
+  {
+    "id": "rb_af_a_1",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 1,
+    "category": "rebalance_approx_fact",
+    "user_input": "예산은 대충 70 정도였어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_2",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 2,
+    "category": "rebalance_approx_fact",
+    "user_input": "i think it was around 75",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_3",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 3,
+    "category": "rebalance_approx_fact",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "75"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_4",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 4,
+    "category": "rebalance_approx_fact",
+    "user_input": "예산은 아마 82쯤",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_5",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 5,
+    "category": "rebalance_approx_fact",
+    "user_input": "현재 예산이 얼마였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "82"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_6",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 6,
+    "category": "rebalance_approx_fact",
+    "user_input": "I think it was around 90 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_7",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 7,
+    "category": "rebalance_approx_fact",
+    "user_input": "What was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "90"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_8",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 8,
+    "category": "rebalance_approx_fact",
+    "user_input": "noise line",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_9",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 9,
+    "category": "rebalance_approx_fact",
+    "user_input": "latest budget now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "90"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_10",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 10,
+    "category": "rebalance_approx_fact",
+    "user_input": "another noise",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_11",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 11,
+    "category": "rebalance_approx_fact",
+    "user_input": "내 예산 최신값 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "90"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_a_12",
+    "session_id": "rebalance_approx_fact_a",
+    "turn": 12,
+    "category": "rebalance_approx_fact",
+    "user_input": "done",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_a"
+  },
+  {
+    "id": "rb_af_b_1",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 1,
+    "category": "rebalance_approx_fact",
+    "user_input": "기억으로는 예산이 300 근처였어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_2",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 2,
+    "category": "rebalance_approx_fact",
+    "user_input": "i think it was around 320 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_3",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 3,
+    "category": "rebalance_approx_fact",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "320"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_4",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 4,
+    "category": "rebalance_approx_fact",
+    "user_input": "예산은 아마 340쯤",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_5",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 5,
+    "category": "rebalance_approx_fact",
+    "user_input": "what was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "340"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_6",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 6,
+    "category": "rebalance_approx_fact",
+    "user_input": "현재 예산 얼마였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "340"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_7",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 7,
+    "category": "rebalance_approx_fact",
+    "user_input": "i think it was around 360",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_8",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 8,
+    "category": "rebalance_approx_fact",
+    "user_input": "latest budget now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "360"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_9",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 9,
+    "category": "rebalance_approx_fact",
+    "user_input": "irrelevant message",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_10",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 10,
+    "category": "rebalance_approx_fact",
+    "user_input": "budget recall",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "360"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_11",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 11,
+    "category": "rebalance_approx_fact",
+    "user_input": "irrelevant close",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb_af_b_12",
+    "session_id": "rebalance_approx_fact_b",
+    "turn": 12,
+    "category": "rebalance_approx_fact",
+    "user_input": "내 최신 예산?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "360"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_approx_fact_b"
+  },
+  {
+    "id": "rb2_goal_a_1",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 1,
+    "category": "rebalance_goal_recovery",
+    "user_input": "언젠가 memory-centric AI를 완성해보고 싶어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_2",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 2,
+    "category": "rebalance_goal_recovery",
+    "user_input": "아직 방향을 다듬는 중이야",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_3",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 3,
+    "category": "rebalance_goal_recovery",
+    "user_input": "What is my objective?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "memory-centric",
+      "ai"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_4",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 4,
+    "category": "rebalance_goal_recovery",
+    "user_input": "기억 기반 모듈형 시스템을 만들고 싶어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_5",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 5,
+    "category": "rebalance_goal_recovery",
+    "user_input": "내 목표 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "모듈형",
+      "시스템"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_6",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 6,
+    "category": "rebalance_goal_recovery",
+    "user_input": "objective again?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "모듈형",
+      "system"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_7",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 7,
+    "category": "rebalance_goal_recovery",
+    "user_input": "noise turn",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_a_8",
+    "session_id": "rebalance_goal_recovery_a",
+    "turn": 8,
+    "category": "rebalance_goal_recovery",
+    "user_input": "what is my objective now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "모듈형",
+      "system"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_a"
+  },
+  {
+    "id": "rb2_goal_b_1",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 1,
+    "category": "rebalance_goal_recovery",
+    "user_input": "장기적으로 에이전트 메모리 구조를 구축해보고 싶어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_2",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 2,
+    "category": "rebalance_goal_recovery",
+    "user_input": "우선 작은 실험부터 하자",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_3",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 3,
+    "category": "rebalance_goal_recovery",
+    "user_input": "What is my objective?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "메모리",
+      "구조"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_4",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 4,
+    "category": "rebalance_goal_recovery",
+    "user_input": "I want to build a modular memory agent eventually.",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_5",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 5,
+    "category": "rebalance_goal_recovery",
+    "user_input": "latest objective?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "modular",
+      "memory",
+      "agent"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_6",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 6,
+    "category": "rebalance_goal_recovery",
+    "user_input": "내 목표 다시 알려줘",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "modular",
+      "메모리"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_7",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 7,
+    "category": "rebalance_goal_recovery",
+    "user_input": "잡음 문장",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_goal_b_8",
+    "session_id": "rebalance_goal_recovery_b",
+    "turn": 8,
+    "category": "rebalance_goal_recovery",
+    "user_input": "objective recall",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "modular",
+      "memory",
+      "agent"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_goal_recovery_b"
+  },
+  {
+    "id": "rb2_fact_a_1",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 1,
+    "category": "rebalance_fact_recovery",
+    "user_input": "예산은 아마 410 정도였어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_2",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 2,
+    "category": "rebalance_fact_recovery",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "410"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_3",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 3,
+    "category": "rebalance_fact_recovery",
+    "user_input": "i think it was around 430 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_4",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 4,
+    "category": "rebalance_fact_recovery",
+    "user_input": "what was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "430"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_5",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 5,
+    "category": "rebalance_fact_recovery",
+    "user_input": "예산은 대충 450쯤이었던 듯해",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_6",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 6,
+    "category": "rebalance_fact_recovery",
+    "user_input": "현재 예산이 얼마였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "450"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_7",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 7,
+    "category": "rebalance_fact_recovery",
+    "user_input": "budget recall",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "450"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_8",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 8,
+    "category": "rebalance_fact_recovery",
+    "user_input": "i think it was around 470 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_9",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 9,
+    "category": "rebalance_fact_recovery",
+    "user_input": "latest budget now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "470"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_a_10",
+    "session_id": "rebalance_fact_recovery_a",
+    "turn": 10,
+    "category": "rebalance_fact_recovery",
+    "user_input": "내 최신 예산?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "470"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_a"
+  },
+  {
+    "id": "rb2_fact_b_1",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 1,
+    "category": "rebalance_fact_recovery",
+    "user_input": "기억으로는 예산이 510 정도였어",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_2",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 2,
+    "category": "rebalance_fact_recovery",
+    "user_input": "현재 예산 얼마였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "510"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_3",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 3,
+    "category": "rebalance_fact_recovery",
+    "user_input": "i think it was around 530 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_4",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 4,
+    "category": "rebalance_fact_recovery",
+    "user_input": "latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "530"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_5",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 5,
+    "category": "rebalance_fact_recovery",
+    "user_input": "예산은 아마 550쯤",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_6",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 6,
+    "category": "rebalance_fact_recovery",
+    "user_input": "What was my latest budget?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "550"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_7",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 7,
+    "category": "rebalance_fact_recovery",
+    "user_input": "budget value now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "550"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_8",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 8,
+    "category": "rebalance_fact_recovery",
+    "user_input": "i think it was around 570 budget",
+    "should_store": true,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_9",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 9,
+    "category": "rebalance_fact_recovery",
+    "user_input": "latest budget now?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "570"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
+  },
+  {
+    "id": "rb2_fact_b_10",
+    "session_id": "rebalance_fact_recovery_b",
+    "turn": 10,
+    "category": "rebalance_fact_recovery",
+    "user_input": "내 예산 최신값 뭐였지?",
+    "should_store": false,
+    "expected_store_type": null,
+    "expected_retrieval_keywords": [
+      "570"
+    ],
+    "expected_conflict_winner_keywords": [],
+    "stale_conflict_keywords": [],
+    "consistency_group": "rebalance_fact_recovery_b"
   }
 ]

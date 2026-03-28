@@ -63,6 +63,15 @@ def test_memory_recall_detection() -> None:
     assert InputType.QUESTION in recall.input_types
 
 
+def test_latest_recall_phrase_is_detected_as_memory_recall() -> None:
+    processor = InputProcessor()
+
+    recall = processor.process("What was my latest budget?")
+
+    assert InputType.MEMORY_RECALL in recall.input_types
+    assert InputType.QUESTION in recall.input_types
+
+
 def test_goal_requires_target_state_or_long_term_signal() -> None:
     processor = InputProcessor()
 
@@ -83,6 +92,24 @@ def test_preference_is_style_behavior_not_commitment() -> None:
     assert InputType.COMMITMENT not in preference.input_types
     assert InputType.COMMITMENT not in commitment_like.input_types
     assert InputType.PREFERENCE not in commitment_like.input_types
+
+
+def test_partial_ambiguous_fact_is_weak_fact_not_strong_fact() -> None:
+    processor = InputProcessor()
+
+    result = processor.process("예산은 아마 120 정도였던 것 같아")
+
+    assert result.fact_confidence == "weak"
+    assert InputType.FACT not in result.input_types
+
+
+def test_recall_noise_phrase_is_not_weak_fact() -> None:
+    processor = InputProcessor()
+
+    result = processor.process("budget recall now")
+
+    assert result.fact_confidence == "none"
+    assert InputType.FACT not in result.input_types
 
 
 def test_commitment_detects_explicit_promise_and_scheduled_future_action() -> None:

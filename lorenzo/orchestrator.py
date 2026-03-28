@@ -44,6 +44,11 @@ class UpdateTelemetry:
     false_merge_attempts: int = 0
     conflict_resolved: int = 0
     conflict_count_by_type: dict[str, int] = field(default_factory=dict)
+    weak_memory_candidates: int = 0
+    weak_memory_stored: int = 0
+    weak_memory_promotions: int = 0
+    weak_memory_retrieval_hits: int = 0
+    retrieval_turns: int = 0
 
 
 @dataclass(slots=True)
@@ -65,6 +70,7 @@ class LorenzoOrchestrator:
         dedup_similarity_threshold: float = 0.92,
         semantic_merge_similarity_threshold: float = 0.78,
         merge_confidence_threshold: float = 0.82,
+        weak_promotion_similarity_threshold: float = 0.60,
     ) -> None:
         self.modules = modules
         self.top_k = top_k
@@ -72,6 +78,7 @@ class LorenzoOrchestrator:
         self.dedup_similarity_threshold = dedup_similarity_threshold
         self.semantic_merge_similarity_threshold = semantic_merge_similarity_threshold
         self.merge_confidence_threshold = merge_confidence_threshold
+        self.weak_promotion_similarity_threshold = weak_promotion_similarity_threshold
         self._telemetry = UpdateTelemetry()
 
     @classmethod
@@ -84,9 +91,18 @@ class LorenzoOrchestrator:
                 recency_weight=config.memory.recency_weight,
                 similarity_weight=config.memory.similarity_weight,
                 lexical_fallback_weight=config.memory.lexical_fallback_weight,
+                memory_tier_weight=config.memory.memory_tier_weight,
                 recency_half_life_hours=config.memory.recency_half_life_hours,
                 retrieval_preselect_multiplier=config.memory.retrieval_preselect_multiplier,
                 min_similarity_floor=config.memory.min_similarity_floor,
+                weak_memory_penalty=config.memory.weak_memory_penalty,
+                weak_memory_fallback_penalty=config.memory.weak_memory_fallback_penalty,
+                fallback_similarity_threshold=config.memory.fallback_similarity_threshold,
+                fallback_score_threshold=config.memory.fallback_score_threshold,
+                fallback_min_margin=config.memory.fallback_min_margin,
+                weak_override_low_score_threshold=config.memory.weak_override_low_score_threshold,
+                weak_override_high_similarity_threshold=config.memory.weak_override_high_similarity_threshold,
+                weak_override_type_alignment_threshold=config.memory.weak_override_type_alignment_threshold,
             ),
             reasoning_planner=ReasoningPlanner(),
             language_adapter=LanguageAdapter.from_name(config.language_backend),
@@ -98,6 +114,7 @@ class LorenzoOrchestrator:
             dedup_similarity_threshold=config.memory.dedup_similarity_threshold,
             semantic_merge_similarity_threshold=config.memory.semantic_merge_similarity_threshold,
             merge_confidence_threshold=config.memory.merge_confidence_threshold,
+            weak_promotion_similarity_threshold=config.memory.weak_promotion_similarity_threshold,
         )
 
     def run_turn(self, user_input: str) -> TurnResult:
@@ -108,7 +125,11 @@ class LorenzoOrchestrator:
             query=processed.raw_text,
             memories=existing_memories,
             top_k=self.top_k,
+            mode="auto",
         )
+        self._telemetry.retrieval_turns += 1
+        if any(self._memory_tier(item.memory) == "weak" for item in retrieved):
+            self._telemetry.weak_memory_retrieval_hits += 1
         if self._apply_retrieval_feedback(existing_memories, retrieved):
             self.modules.memory_store.replace_all(existing_memories)
 
@@ -149,6 +170,11 @@ class LorenzoOrchestrator:
             false_merge_attempts=self._telemetry.false_merge_attempts,
             conflict_resolved=self._telemetry.conflict_resolved,
             conflict_count_by_type=dict(self._telemetry.conflict_count_by_type),
+            weak_memory_candidates=self._telemetry.weak_memory_candidates,
+            weak_memory_stored=self._telemetry.weak_memory_stored,
+            weak_memory_promotions=self._telemetry.weak_memory_promotions,
+            weak_memory_retrieval_hits=self._telemetry.weak_memory_retrieval_hits,
+            retrieval_turns=self._telemetry.retrieval_turns,
         )
 
     def _update_memories(self, processed: ProcessedInput) -> None:
@@ -160,6 +186,9 @@ class LorenzoOrchestrator:
         self._telemetry.candidates_seen += len(candidates)
 
         for candidate in candidates:
+            candidate_tier = self._memory_tier(candidate)
+            if candidate_tier == "weak":
+                self._telemetry.weak_memory_candidates += 1
             is_working_question = candidate.metadata.get("policy") == "question_working_only"
             if not is_working_question and candidate.importance < self.min_importance_to_store:
                 continue
@@ -174,6 +203,37 @@ class LorenzoOrchestrator:
                 continue
 
             match_index, match_similarity = self._find_best_match(existing, candidate)
+            if candidate.memory_type is MemoryType.SEMANTIC and match_index >= 0:
+                current = existing[match_index]
+                current_tier = self._memory_tier(current)
+                same_kind = self._semantic_kind(current) == self._semantic_kind(candidate)
+
+                if (
+                    candidate_tier == "strong"
+                    and current_tier == "weak"
+                    and same_kind
+                    and match_similarity >= self.weak_promotion_similarity_threshold
+                ):
+                    existing[match_index] = self._promote_weak_memory(
+                        weak_memory=current,
+                        strong_candidate=candidate,
+                        similarity=match_similarity,
+                        now=now,
+                    )
+                    self._telemetry.weak_memory_promotions += 1
+                    changed = True
+                    continue
+
+                if (
+                    candidate_tier == "weak"
+                    and current_tier == "strong"
+                    and same_kind
+                    and match_similarity >= self.semantic_merge_similarity_threshold
+                ):
+                    self._record_weak_hint_observed(current, candidate, now, match_similarity)
+                    changed = True
+                    continue
+
             if match_index >= 0 and match_similarity >= self.dedup_similarity_threshold:
                 self._merge_duplicate(existing[match_index], candidate, match_similarity, now)
                 changed = True
@@ -237,6 +297,8 @@ class LorenzoOrchestrator:
                 continue
 
             existing.append(candidate)
+            if candidate_tier == "weak":
+                self._telemetry.weak_memory_stored += 1
             changed = True
 
         if changed:
@@ -289,7 +351,11 @@ class LorenzoOrchestrator:
                     content=f"Working question context: {text}",
                     memory_type=MemoryType.WORKING,
                     importance=max(6.2, base_importance),
-                    metadata={"source": "user", "policy": "question_working_only"},
+                    metadata={
+                        "source": "user",
+                        "policy": "question_working_only",
+                        "memory_tier": "strong",
+                    },
                     tags=["working", "question"],
                     created_at=now,
                 )
@@ -302,8 +368,19 @@ class LorenzoOrchestrator:
                     content=f"User goal: {text}",
                     memory_type=MemoryType.SEMANTIC,
                     importance=max(8.0, base_importance),
-                    metadata={"rule": "goal_to_semantic"},
-                    tags=["goal", "semantic"],
+                    metadata={"rule": "goal_to_semantic", "memory_tier": "strong"},
+                    tags=["goal", "semantic", "strong"],
+                    created_at=now,
+                )
+            )
+        elif processed.goal_confidence == "weak":
+            candidates.append(
+                MemoryItem(
+                    content=f"Weak goal hint: {text}",
+                    memory_type=MemoryType.SEMANTIC,
+                    importance=max(6.6, base_importance - 0.9),
+                    metadata={"rule": "weak_goal_hint", "memory_tier": "weak", "trust_level": "hint"},
+                    tags=["goal", "semantic", "weak", "weak_hint"],
                     created_at=now,
                 )
             )
@@ -314,8 +391,30 @@ class LorenzoOrchestrator:
                     content=f"User preference: {text}",
                     memory_type=MemoryType.SEMANTIC,
                     importance=max(7.0, base_importance),
-                    metadata={"rule": "preference_to_semantic"},
-                    tags=["preference", "semantic"],
+                    metadata={"rule": "preference_to_semantic", "memory_tier": "strong"},
+                    tags=["preference", "semantic", "strong"],
+                    created_at=now,
+                )
+            )
+        elif processed.preference_confidence == "weak":
+            candidates.append(
+                MemoryItem(
+                    content=f"Weak preference hint: {text}",
+                    memory_type=MemoryType.SEMANTIC,
+                    importance=max(6.6, base_importance - 0.8),
+                    metadata={
+                        "rule": "weak_preference_hint",
+                        "memory_tier": "weak",
+                        "trust_level": "hint",
+                        "hint_type": "weak_preference_hint",
+                    },
+                    tags=[
+                        "preference",
+                        "semantic",
+                        "weak",
+                        "weak_hint",
+                        "weak_preference_hint",
+                    ],
                     created_at=now,
                 )
             )
@@ -326,8 +425,8 @@ class LorenzoOrchestrator:
                     content=f"User commitment: {text}",
                     memory_type=MemoryType.SEMANTIC,
                     importance=max(7.5, base_importance),
-                    metadata={"rule": "commitment_to_semantic"},
-                    tags=["commitment", "semantic"],
+                    metadata={"rule": "commitment_to_semantic", "memory_tier": "strong"},
+                    tags=["commitment", "semantic", "strong"],
                     created_at=now,
                 )
             )
@@ -338,8 +437,33 @@ class LorenzoOrchestrator:
                     content=f"User fact: {text}",
                     memory_type=MemoryType.SEMANTIC,
                     importance=max(7.2, base_importance),
-                    metadata={"rule": "fact_to_semantic"},
-                    tags=["fact", "semantic"],
+                    metadata={"rule": "fact_to_semantic", "memory_tier": "strong"},
+                    tags=["fact", "semantic", "strong"],
+                    created_at=now,
+                )
+            )
+        elif processed.fact_confidence == "weak":
+            weak_fact_key = self._infer_fact_hint_key(text)
+            weak_fact_value = self._infer_fact_hint_value(text)
+            weak_fact_content = self._build_weak_fact_hint_content(
+                source_text=text,
+                fact_key=weak_fact_key,
+                fact_value=weak_fact_value,
+            )
+            candidates.append(
+                MemoryItem(
+                    content=weak_fact_content,
+                    memory_type=MemoryType.SEMANTIC,
+                    importance=max(6.5, base_importance - 0.9),
+                    metadata={
+                        "rule": "weak_fact_hint",
+                        "memory_tier": "weak",
+                        "trust_level": "hint",
+                        "hint_type": "weak_fact_hint",
+                        "fact_key": weak_fact_key,
+                        "fact_value": weak_fact_value,
+                    },
+                    tags=["fact", "semantic", "weak", "weak_hint", "weak_fact_hint"],
                     created_at=now,
                 )
             )
@@ -350,8 +474,8 @@ class LorenzoOrchestrator:
                     content=f"User event: {text}",
                     memory_type=MemoryType.EPISODIC,
                     importance=max(6.5, base_importance),
-                    metadata={"rule": "event_to_episodic"},
-                    tags=["event", "episodic"],
+                    metadata={"rule": "event_to_episodic", "memory_tier": "strong"},
+                    tags=["event", "episodic", "strong"],
                     created_at=now,
                 )
             )
@@ -390,6 +514,45 @@ class LorenzoOrchestrator:
             score -= 0.8
         return max(0.0, min(10.0, score))
 
+    def _infer_fact_hint_key(self, text: str) -> str:
+        lowered = text.lower()
+        key_aliases = (
+            ("budget", ("budget", "예산", "비용", "cost")),
+            ("deadline", ("deadline", "마감", "기한", "due")),
+            ("price", ("price", "가격", "요금")),
+            ("version", ("version", "버전", "릴리스")),
+            ("rate", ("rate", "비율", "percent", "%")),
+        )
+        for canonical_key, aliases in key_aliases:
+            if any(alias in lowered for alias in aliases):
+                return canonical_key
+        return ""
+
+    def _infer_fact_hint_value(self, text: str) -> str:
+        numeric = re.search(r"\d+(?:[.,]\d+)?(?::\d{2})?", text)
+        if numeric:
+            return numeric.group(0).replace(",", "")
+
+        korean_tail = re.search(r"(?:은|는|이|가)\s*(.+)$", text.strip())
+        if korean_tail:
+            return korean_tail.group(1).strip().lower()
+
+        english_tail = re.search(r"\bis\s+(.+)$", text.strip(), flags=re.IGNORECASE)
+        if english_tail:
+            return english_tail.group(1).strip().lower()
+
+        return ""
+
+    def _build_weak_fact_hint_content(self, source_text: str, fact_key: str, fact_value: str) -> str:
+        fields: list[str] = []
+        if fact_key:
+            fields.append(f"key={fact_key}")
+        if fact_value:
+            fields.append(f"value={fact_value}")
+        if not fields:
+            return f"Weak fact hint: source={source_text}"
+        return f"Weak fact hint: {'; '.join(fields)}; source={source_text}"
+
     def _resolve_semantic_conflict_by_policy(
         self,
         existing: list[MemoryItem],
@@ -399,6 +562,8 @@ class LorenzoOrchestrator:
         now: datetime,
     ) -> ConflictResolutionResult | None:
         current = existing[match_index]
+        if self._memory_tier(current) != "strong" or self._memory_tier(candidate) != "strong":
+            return None
         existing_kind = self._semantic_kind(current)
         candidate_kind = self._semantic_kind(candidate)
         if existing_kind != candidate_kind:
@@ -512,6 +677,70 @@ class LorenzoOrchestrator:
             return "commitment"
         return "unknown"
 
+    def _memory_tier(self, memory: MemoryItem) -> str:
+        tier = str(memory.metadata.get("memory_tier", "strong")).lower().strip()
+        if tier not in {"strong", "weak"}:
+            return "strong"
+        return tier
+
+    def _promote_weak_memory(
+        self,
+        weak_memory: MemoryItem,
+        strong_candidate: MemoryItem,
+        similarity: float,
+        now: datetime,
+    ) -> MemoryItem:
+        metadata = dict(weak_memory.metadata)
+        history = list(metadata.get("weak_history", []))
+        history.append(
+            {
+                "content": weak_memory.content,
+                "promoted_at": now.isoformat(),
+                "similarity": round(similarity, 3),
+            }
+        )
+        metadata.update(strong_candidate.metadata)
+        metadata["memory_tier"] = "strong"
+        metadata["promoted_from_weak"] = True
+        metadata["promotion_count"] = int(metadata.get("promotion_count", 0)) + 1
+        metadata["weak_history"] = history[-20:]
+        metadata["promotion_similarity"] = round(similarity, 3)
+        metadata["promoted_at"] = now.isoformat()
+        return MemoryItem(
+            content=strong_candidate.content,
+            memory_type=strong_candidate.memory_type,
+            importance=max(weak_memory.importance, strong_candidate.importance),
+            metadata=metadata,
+            tags=sorted(
+                {
+                    tag
+                    for tag in (list(weak_memory.tags) + list(strong_candidate.tags) + ["strong"])
+                    if tag.lower() not in {"weak", "weak_hint"}
+                }
+            ),
+            created_at=now,
+        )
+
+    def _record_weak_hint_observed(
+        self,
+        strong_memory: MemoryItem,
+        weak_candidate: MemoryItem,
+        now: datetime,
+        similarity: float,
+    ) -> None:
+        hints = list(strong_memory.metadata.get("weak_hints_ignored", []))
+        hints.append(
+            {
+                "at": now.isoformat(),
+                "content": weak_candidate.content,
+                "similarity": round(similarity, 3),
+            }
+        )
+        strong_memory.metadata["weak_hints_ignored"] = hints[-20:]
+        strong_memory.metadata["weak_hint_seen_count"] = int(
+            strong_memory.metadata.get("weak_hint_seen_count", 0)
+        ) + 1
+
     def _is_semantic_conflict_candidate(
         self,
         existing: MemoryItem,
@@ -542,7 +771,14 @@ class LorenzoOrchestrator:
         existing.content = candidate.content
         existing.importance = min(10.0, max(existing.importance, candidate.importance))
         existing.metadata[history_key] = history[-20:]
-        existing.tags = sorted(set(existing.tags) | set(candidate.tags) | {"conflict_resolved"})
+        existing.metadata["memory_tier"] = "strong"
+        existing.tags = sorted(
+            {
+                tag
+                for tag in (list(existing.tags) + list(candidate.tags) + ["conflict_resolved", "strong"])
+                if tag.lower() not in {"weak", "weak_hint"}
+            }
+        )
 
     def _annotate_conflict_resolution(
         self,
@@ -578,12 +814,14 @@ class LorenzoOrchestrator:
         existing.metadata["fact_conflicts"] = existing_history[-20:]
         existing.metadata["conflict_strategy"] = "keep_both_mark_conflict"
         existing.metadata["conflict_reason"] = "fact_value_conflict"
+        existing.metadata["memory_tier"] = "strong"
         existing.tags = sorted(set(existing.tags) | {"conflict"})
 
         candidate.metadata["conflict_strategy"] = "keep_both_mark_conflict"
         candidate.metadata["conflict_reason"] = "fact_value_conflict"
         candidate.metadata["conflict_with"] = existing.memory_id
         candidate.metadata["conflict_recorded_at"] = now.isoformat()
+        candidate.metadata["memory_tier"] = "strong"
         candidate.tags = sorted(set(candidate.tags) | {"conflict"})
 
     def _mark_commitment_conflict_pending(
@@ -601,12 +839,14 @@ class LorenzoOrchestrator:
         existing.metadata["commitment_pending_conflicts"] = pending[-20:]
         existing.metadata["conflict_strategy"] = "require_explicit_confirmation"
         existing.metadata["conflict_reason"] = "commitment_conflict_pending_confirmation"
+        existing.metadata["memory_tier"] = "strong"
         existing.tags = sorted(set(existing.tags) | {"conflict_pending"})
 
         candidate.metadata["conflict_strategy"] = "require_explicit_confirmation"
         candidate.metadata["conflict_reason"] = "commitment_conflict_pending_confirmation"
         candidate.metadata["needs_confirmation"] = True
         candidate.metadata["conflict_with"] = existing.memory_id
+        candidate.metadata["memory_tier"] = "strong"
         candidate.tags = sorted(set(candidate.tags) | {"conflict_pending"})
 
     def _has_explicit_confirmation_signal(self, content: str) -> bool:
@@ -766,12 +1006,21 @@ class LorenzoOrchestrator:
         similarity: float,
         now: datetime,
     ) -> None:
+        existing_tier = self._memory_tier(existing)
+        candidate_tier = self._memory_tier(candidate)
+        merged_tier = "strong" if "strong" in {existing_tier, candidate_tier} else "weak"
         seen_count = int(existing.metadata.get("seen_count", 1)) + 1
         existing.metadata["seen_count"] = seen_count
         existing.metadata["last_seen_at"] = now.isoformat()
         existing.metadata["dedup_similarity"] = round(similarity, 3)
+        existing.metadata["memory_tier"] = merged_tier
         existing.importance = min(10.0, max(existing.importance, candidate.importance) + 0.1)
-        existing.tags = sorted(set(existing.tags) | set(candidate.tags))
+        merged_tags = sorted(set(existing.tags) | set(candidate.tags))
+        if merged_tier == "strong":
+            merged_tags = [
+                tag for tag in merged_tags if tag.lower() not in {"weak", "weak_hint"}
+            ] + ["strong"]
+        existing.tags = sorted(set(merged_tags))
 
     def _synthesize_semantic_memory(
         self,
@@ -781,6 +1030,9 @@ class LorenzoOrchestrator:
         confidence: float,
         now: datetime,
     ) -> MemoryItem:
+        existing_tier = self._memory_tier(existing)
+        candidate_tier = self._memory_tier(candidate)
+        merged_tier = "strong" if "strong" in {existing_tier, candidate_tier} else "weak"
         merged_content = self._synthesize_summary(existing.content, candidate.content)
         merged_from = list(dict.fromkeys([existing.memory_id, candidate.memory_id]))
         merged_count = int(existing.metadata.get("merged_count", 0)) + 1
@@ -798,14 +1050,19 @@ class LorenzoOrchestrator:
                     int(existing.metadata.get("access_count", 0)),
                     int(candidate.metadata.get("access_count", 0)),
                 ),
+                "memory_tier": merged_tier,
             }
         )
+        merged_tags = sorted(set(existing.tags) | set(candidate.tags) | {"merged", "summary"})
+        if merged_tier == "strong":
+            merged_tags = [tag for tag in merged_tags if tag.lower() not in {"weak", "weak_hint"}]
+            merged_tags = sorted(set(merged_tags) | {"strong"})
         return MemoryItem(
             content=merged_content,
             memory_type=MemoryType.SEMANTIC,
             importance=min(10.0, max(existing.importance, candidate.importance)),
             metadata=metadata,
-            tags=sorted(set(existing.tags) | set(candidate.tags) | {"merged", "summary"}),
+            tags=merged_tags,
             created_at=now,
         )
 

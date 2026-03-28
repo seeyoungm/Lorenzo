@@ -7,11 +7,21 @@ importance_weight = 0.10
 recency_weight = 0.15
 similarity_weight = 0.75
 lexical_fallback_weight = 0.05
+memory_tier_weight = 0.06
+weak_memory_penalty = 0.30
+weak_memory_fallback_penalty = 0.0
+fallback_similarity_threshold = 0.70
+fallback_score_threshold = 0.46
+fallback_min_margin = 0.05
+weak_override_low_score_threshold = 0.75
+weak_override_high_similarity_threshold = 0.50
+weak_override_type_alignment_threshold = 0.70
 recency_half_life_hours = 72.0
 min_importance_to_store = 6.5
 dedup_similarity_threshold = 0.97
 semantic_merge_similarity_threshold = 0.60
 merge_confidence_threshold = 0.68
+weak_promotion_similarity_threshold = 0.60
 
 [language]
 backend = "rule_based"

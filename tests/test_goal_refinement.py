@@ -77,3 +77,27 @@ def test_goal_sentence_with_memory_noun_is_not_memory_instruction() -> None:
     assert result.goal_confidence == "strong"
     assert InputType.GOAL_STATEMENT in result.input_types
     assert InputType.MEMORY_INSTRUCTION not in result.input_types
+
+
+def test_weak_preference_is_classified_as_hint_only() -> None:
+    processor = InputProcessor()
+    result = processor.process("가능하면 답변 스타일은 짧으면 좋겠어")
+
+    assert result.preference_confidence == "weak"
+    assert InputType.PREFERENCE not in result.input_types
+
+
+def test_weak_goal_hint_is_promoted_when_strong_goal_arrives(tmp_path: Path) -> None:
+    orch = _build(tmp_path / "goal-promotion.jsonl")
+
+    orch.run_turn("언젠가 AI 제품을 만들어보고 싶어")
+    orch.run_turn("장기적으로 장기 기억 AI 제품을 완성하는 게 목표야")
+
+    all_items = orch.modules.memory_store.list_all()
+    weak_hints = [item for item in all_items if item.content.startswith("Weak goal hint:")]
+    goals = [item for item in all_items if item.content.startswith("User goal:")]
+
+    assert len(weak_hints) == 0
+    assert len(goals) == 1
+    assert goals[0].metadata.get("memory_tier") == "strong"
+    assert goals[0].metadata.get("promoted_from_weak") is True

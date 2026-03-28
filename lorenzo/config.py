@@ -15,11 +15,21 @@ class MemoryConfig:
     recency_weight: float = 0.15
     similarity_weight: float = 0.75
     lexical_fallback_weight: float = 0.05
+    memory_tier_weight: float = 0.06
+    weak_memory_penalty: float = 0.30
+    weak_memory_fallback_penalty: float = 0.0
+    fallback_similarity_threshold: float = 0.70
+    fallback_score_threshold: float = 0.46
+    fallback_min_margin: float = 0.05
+    weak_override_low_score_threshold: float = 0.75
+    weak_override_high_similarity_threshold: float = 0.50
+    weak_override_type_alignment_threshold: float = 0.70
     recency_half_life_hours: float = 72.0
     min_importance_to_store: float = 6.5
     dedup_similarity_threshold: float = 0.97
     semantic_merge_similarity_threshold: float = 0.60
     merge_confidence_threshold: float = 0.68
+    weak_promotion_similarity_threshold: float = 0.60
 
 
 @dataclass(slots=True)
@@ -41,6 +51,21 @@ class AppConfig:
             recency_weight=float(memory_raw.get("recency_weight", 0.15)),
             similarity_weight=float(memory_raw.get("similarity_weight", 0.75)),
             lexical_fallback_weight=float(memory_raw.get("lexical_fallback_weight", 0.05)),
+            memory_tier_weight=float(memory_raw.get("memory_tier_weight", 0.06)),
+            weak_memory_penalty=float(memory_raw.get("weak_memory_penalty", 0.30)),
+            weak_memory_fallback_penalty=float(memory_raw.get("weak_memory_fallback_penalty", 0.0)),
+            fallback_similarity_threshold=float(memory_raw.get("fallback_similarity_threshold", 0.70)),
+            fallback_score_threshold=float(memory_raw.get("fallback_score_threshold", 0.46)),
+            fallback_min_margin=float(memory_raw.get("fallback_min_margin", 0.05)),
+            weak_override_low_score_threshold=float(
+                memory_raw.get("weak_override_low_score_threshold", 0.75)
+            ),
+            weak_override_high_similarity_threshold=float(
+                memory_raw.get("weak_override_high_similarity_threshold", 0.50)
+            ),
+            weak_override_type_alignment_threshold=float(
+                memory_raw.get("weak_override_type_alignment_threshold", 0.70)
+            ),
             recency_half_life_hours=float(memory_raw.get("recency_half_life_hours", 72.0)),
             min_importance_to_store=float(memory_raw.get("min_importance_to_store", 6.5)),
             dedup_similarity_threshold=float(memory_raw.get("dedup_similarity_threshold", 0.97)),
@@ -48,6 +73,9 @@ class AppConfig:
                 memory_raw.get("semantic_merge_similarity_threshold", 0.60)
             ),
             merge_confidence_threshold=float(memory_raw.get("merge_confidence_threshold", 0.68)),
+            weak_promotion_similarity_threshold=float(
+                memory_raw.get("weak_promotion_similarity_threshold", 0.60)
+            ),
         )
 
         language_backend = raw.get("language", {}).get("backend", "rule_based")
