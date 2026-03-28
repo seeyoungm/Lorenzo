@@ -101,6 +101,10 @@ class EvalMetrics:
     conflict_detected_rate: float
     answer_change_rate: float
     iteration_gain_score: float
+    factual_refinement_gain: float
+    preference_alignment_gain: float
+    support_completion_gain: float
+    conflict_fix_rate: float
 
 
 class BaselineEngine:
@@ -221,6 +225,14 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     refinement_conflict_detected_total = 0
     refinement_answer_change_total = 0
     iteration_gain_total = 0.0
+    factual_refinement_attempt_total = 0
+    factual_refinement_success_total = 0
+    preference_alignment_attempt_total = 0
+    preference_alignment_success_total = 0
+    support_completion_attempt_total = 0
+    support_completion_success_total = 0
+    conflict_fix_attempt_total = 0
+    conflict_fix_success_total = 0
     recall_query_total_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
     weak_coverage_hits_by_intent = {"goal_recall": 0, "preference_recall": 0, "fact_recall": 0}
 
@@ -416,6 +428,36 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
             )
             iteration_gain_total += (
                 after_telemetry.iteration_gain_total - before_telemetry.iteration_gain_total
+            )
+            factual_refinement_attempt_total += (
+                after_telemetry.factual_refinement_attempts
+                - before_telemetry.factual_refinement_attempts
+            )
+            factual_refinement_success_total += (
+                after_telemetry.factual_refinement_successes
+                - before_telemetry.factual_refinement_successes
+            )
+            preference_alignment_attempt_total += (
+                after_telemetry.preference_alignment_attempts
+                - before_telemetry.preference_alignment_attempts
+            )
+            preference_alignment_success_total += (
+                after_telemetry.preference_alignment_successes
+                - before_telemetry.preference_alignment_successes
+            )
+            support_completion_attempt_total += (
+                after_telemetry.support_completion_attempts
+                - before_telemetry.support_completion_attempts
+            )
+            support_completion_success_total += (
+                after_telemetry.support_completion_successes
+                - before_telemetry.support_completion_successes
+            )
+            conflict_fix_attempt_total += (
+                after_telemetry.conflict_fix_attempts - before_telemetry.conflict_fix_attempts
+            )
+            conflict_fix_success_total += (
+                after_telemetry.conflict_fix_successes - before_telemetry.conflict_fix_successes
             )
 
             top1_text = (result.retrieved_memories[0].memory.content if result.retrieved_memories else "").lower()
@@ -640,6 +682,19 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
     conflict_detected_rate = _safe_div(refinement_conflict_detected_total, refinement_attempt_total)
     answer_change_rate = _safe_div(refinement_answer_change_total, refinement_attempt_total)
     iteration_gain_score = _safe_div(iteration_gain_total, refinement_attempt_total)
+    factual_refinement_gain = _safe_div(
+        factual_refinement_success_total,
+        factual_refinement_attempt_total,
+    )
+    preference_alignment_gain = _safe_div(
+        preference_alignment_success_total,
+        preference_alignment_attempt_total,
+    )
+    support_completion_gain = _safe_div(
+        support_completion_success_total,
+        support_completion_attempt_total,
+    )
+    conflict_fix_rate = _safe_div(conflict_fix_success_total, conflict_fix_attempt_total)
 
     return EvalMetrics(
         retrieval_hit_rate_top1=retrieval_hit_rate_top1,
@@ -704,6 +759,10 @@ def evaluate_memory_pipeline(config: AppConfig, scenarios: list[EvalScenario]) -
         conflict_detected_rate=conflict_detected_rate,
         answer_change_rate=answer_change_rate,
         iteration_gain_score=iteration_gain_score,
+        factual_refinement_gain=factual_refinement_gain,
+        preference_alignment_gain=preference_alignment_gain,
+        support_completion_gain=support_completion_gain,
+        conflict_fix_rate=conflict_fix_rate,
     )
 
 
@@ -779,6 +838,10 @@ def evaluate_baseline(scenarios: list[EvalScenario]) -> EvalMetrics:
         conflict_detected_rate=0.0,
         answer_change_rate=0.0,
         iteration_gain_score=0.0,
+        factual_refinement_gain=0.0,
+        preference_alignment_gain=0.0,
+        support_completion_gain=0.0,
+        conflict_fix_rate=0.0,
     )
 
 
@@ -1038,6 +1101,10 @@ def main() -> None:
     print(f"conflict_detected_rate={memory_metrics.conflict_detected_rate:.3f}")
     print(f"answer_change_rate={memory_metrics.answer_change_rate:.3f}")
     print(f"iteration_gain_score={memory_metrics.iteration_gain_score:.3f}")
+    print(f"factual_refinement_gain={memory_metrics.factual_refinement_gain:.3f}")
+    print(f"preference_alignment_gain={memory_metrics.preference_alignment_gain:.3f}")
+    print(f"support_completion_gain={memory_metrics.support_completion_gain:.3f}")
+    print(f"conflict_fix_rate={memory_metrics.conflict_fix_rate:.3f}")
 
     print("\n[Baseline]")
     print(f"retrieval_hit_rate_top1={baseline_metrics.retrieval_hit_rate_top1:.3f}")
@@ -1126,6 +1193,10 @@ def main() -> None:
     print(f"conflict_detected_rate={baseline_metrics.conflict_detected_rate:.3f}")
     print(f"answer_change_rate={baseline_metrics.answer_change_rate:.3f}")
     print(f"iteration_gain_score={baseline_metrics.iteration_gain_score:.3f}")
+    print(f"factual_refinement_gain={baseline_metrics.factual_refinement_gain:.3f}")
+    print(f"preference_alignment_gain={baseline_metrics.preference_alignment_gain:.3f}")
+    print(f"support_completion_gain={baseline_metrics.support_completion_gain:.3f}")
+    print(f"conflict_fix_rate={baseline_metrics.conflict_fix_rate:.3f}")
 
 
 if __name__ == "__main__":

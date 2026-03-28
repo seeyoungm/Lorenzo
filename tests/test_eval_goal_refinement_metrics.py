@@ -102,3 +102,7 @@ def test_goal_refinement_metrics_are_reported(tmp_path: Path) -> None:
     assert 0.0 <= metrics.refinement_improvement_rate <= 1.0
     assert 0.0 <= metrics.conflict_detected_rate <= 1.0
     assert 0.0 <= metrics.answer_change_rate <= 1.0
+    assert 0.0 <= metrics.factual_refinement_gain <= 1.0
+    assert 0.0 <= metrics.preference_alignment_gain <= 1.0
+    assert 0.0 <= metrics.support_completion_gain <= 1.0
+    assert 0.0 <= metrics.conflict_fix_rate <= 1.0

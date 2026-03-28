@@ -55,6 +55,14 @@ class UpdateTelemetry:
     refinement_conflict_detected_count: int = 0
     refinement_answer_changed_count: int = 0
     iteration_gain_total: float = 0.0
+    factual_refinement_attempts: int = 0
+    factual_refinement_successes: int = 0
+    preference_alignment_attempts: int = 0
+    preference_alignment_successes: int = 0
+    support_completion_attempts: int = 0
+    support_completion_successes: int = 0
+    conflict_fix_attempts: int = 0
+    conflict_fix_successes: int = 0
 
 
 @dataclass(slots=True)
@@ -160,21 +168,37 @@ class LorenzoOrchestrator:
         # Keep primary retrieval semantics stable for storage/eval compatibility.
         retrieved = retrieved_pass1
         plan = draft_plan
-        if refinement.refinement_triggered:
+        if refinement.answer_changed:
             plan = refinement.plan
         response = refinement.response
 
         self._telemetry.retrieval_turns += 1
-        self._telemetry.refinement_attempts += 1
         if refinement.refinement_triggered:
+            self._telemetry.refinement_attempts += 1
             self._telemetry.refinement_triggered_count += 1
-        if refinement.conflict_detected:
-            self._telemetry.refinement_conflict_detected_count += 1
-        if refinement.answer_changed:
-            self._telemetry.refinement_answer_changed_count += 1
-        if refinement.iteration_gain > 0:
-            self._telemetry.refinement_improvement_count += 1
-        self._telemetry.iteration_gain_total += refinement.iteration_gain
+            if refinement.conflict_detected:
+                self._telemetry.refinement_conflict_detected_count += 1
+            if refinement.answer_changed:
+                self._telemetry.refinement_answer_changed_count += 1
+            if refinement.iteration_gain > 0:
+                self._telemetry.refinement_improvement_count += 1
+            self._telemetry.iteration_gain_total += refinement.iteration_gain
+        if refinement.factual_refinement_attempted:
+            self._telemetry.factual_refinement_attempts += 1
+        if refinement.factual_refinement_improved:
+            self._telemetry.factual_refinement_successes += 1
+        if refinement.preference_alignment_attempted:
+            self._telemetry.preference_alignment_attempts += 1
+        if refinement.preference_alignment_improved:
+            self._telemetry.preference_alignment_successes += 1
+        if refinement.support_completion_attempted:
+            self._telemetry.support_completion_attempts += 1
+        if refinement.support_completion_improved:
+            self._telemetry.support_completion_successes += 1
+        if refinement.conflict_fix_attempted:
+            self._telemetry.conflict_fix_attempts += 1
+        if refinement.conflict_fix_succeeded:
+            self._telemetry.conflict_fix_successes += 1
 
         if any(self._memory_tier(item.memory) == "weak" for item in retrieved):
             self._telemetry.weak_memory_retrieval_hits += 1
@@ -221,6 +245,14 @@ class LorenzoOrchestrator:
             refinement_conflict_detected_count=self._telemetry.refinement_conflict_detected_count,
             refinement_answer_changed_count=self._telemetry.refinement_answer_changed_count,
             iteration_gain_total=self._telemetry.iteration_gain_total,
+            factual_refinement_attempts=self._telemetry.factual_refinement_attempts,
+            factual_refinement_successes=self._telemetry.factual_refinement_successes,
+            preference_alignment_attempts=self._telemetry.preference_alignment_attempts,
+            preference_alignment_successes=self._telemetry.preference_alignment_successes,
+            support_completion_attempts=self._telemetry.support_completion_attempts,
+            support_completion_successes=self._telemetry.support_completion_successes,
+            conflict_fix_attempts=self._telemetry.conflict_fix_attempts,
+            conflict_fix_successes=self._telemetry.conflict_fix_successes,
         )
 
     def _update_memories(self, processed: ProcessedInput) -> None:

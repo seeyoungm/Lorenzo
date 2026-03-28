@@ -15,6 +15,7 @@ from lorenzo.reasoning.planner import ReasoningPlanner
 class TwoPassRetriever:
     def __init__(self) -> None:
         self.calls = 0
+        self.queries: list[str] = []
         now = datetime(2026, 3, 28, tzinfo=timezone.utc)
         self.low_support = RetrievedMemory(
             memory=MemoryItem(
@@ -47,6 +48,7 @@ class TwoPassRetriever:
 
     def retrieve(self, query, memories, top_k=5, now=None, mode="auto"):  # noqa: ANN001
         self.calls += 1
+        self.queries.append(query)
         if "Draft answer for refinement" in query:
             return [self.high_support]
         return [self.low_support]
@@ -82,6 +84,13 @@ def test_iterative_reasoning_refines_answer_when_support_improves(tmp_path: Path
     assert telemetry.refinement_attempts == 1
     assert telemetry.refinement_improvement_count == 1
     assert telemetry.refinement_answer_changed_count == 1
+    assert telemetry.factual_refinement_attempts == 1
+    assert telemetry.factual_refinement_successes == 1
+    assert telemetry.support_completion_attempts == 1
+    assert telemetry.support_completion_successes == 1
+    assert any("fact_gap_refinement" in query for query in retriever.queries)
+    assert any("support_completion_refinement" in query for query in retriever.queries)
+    assert any("verify key=예산" in query or "verify key=budget" in query for query in retriever.queries)
 
 
 def test_iterative_reasoning_engine_iteration_is_bounded() -> None:
