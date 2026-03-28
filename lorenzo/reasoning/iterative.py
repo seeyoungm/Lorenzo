@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import re
 
-from lorenzo.models import InputType, MemoryType, ProcessedInput, ReasoningPlan, RetrievedMemory
+from lorenzo.models import ProcessedInput, ReasoningPlan, RetrievedMemory
+from lorenzo.reasoning.claim_extractor import ClaimExtractor
+from lorenzo.reasoning.refinement_judge import (
+    ClaimAwareRefinementJudge,
+    RefinementAcceptPolicy,
+    VerificationSummary,
+)
+from lorenzo.reasoning.refinement_objectives import (
+    RefinementObjectivePolicy,
+    RefinementObjectiveRouter,
+)
+from lorenzo.reasoning.requery_builder import RequeryBuilder
 
 
 @dataclass(slots=True)
@@ -27,15 +37,16 @@ class IterativeRefinementResult:
     support_completion_improved: bool
     conflict_fix_attempted: bool
     conflict_fix_succeeded: bool
-
-
-@dataclass(slots=True)
-class RefinementObjectives:
-    factual_correction: bool = False
-    preference_alignment: bool = False
-    conflict_resolution: bool = False
-    support_completion: bool = False
-    low_confidence: bool = False
+    claim_support_coverage: float
+    unsupported_claim_rate: float
+    contradiction_reduced: bool
+    refinement_regressed: bool
+    retrieval_improved_but_answer_worsened: bool
+    answer_changed_without_support_improvement: bool
+    unsupported_claims_remaining: bool
+    refinement_improved: bool
+    draft_claim_support_coverage: float
+    draft_unsupported_claim_rate: float
 
 
 class IterativeReasoningEngine:
@@ -46,36 +57,29 @@ class IterativeReasoningEngine:
         insufficient_similarity_threshold: float = 0.24,
         min_supporting_memories: int = 1,
         support_gain_margin: float = 0.03,
+        min_support_coverage_gain: float = 0.03,
+        min_preference_alignment_gain: float = 0.10,
+        max_support_coverage_drop: float = 0.02,
     ) -> None:
         # Keep loop bounded to avoid unbounded reasoning cycles.
         self.max_iterations = max(2, min(3, max_iterations))
-        self.low_confidence_threshold = low_confidence_threshold
-        self.insufficient_similarity_threshold = insufficient_similarity_threshold
-        self.min_supporting_memories = max(1, min_supporting_memories)
         self.support_gain_margin = max(0.0, support_gain_margin)
-        self._fact_keywords = [
-            "fact",
-            "사실",
-            "예산",
-            "budget",
-            "deadline",
-            "마감",
-            "price",
-            "가격",
-            "version",
-            "버전",
-        ]
-        self._preference_keywords = [
-            "preference",
-            "prefer",
-            "선호",
-            "좋아",
-            "싫어",
-            "style",
-            "tone",
-            "형식",
-            "스타일",
-        ]
+
+        objective_policy = RefinementObjectivePolicy(
+            low_confidence_threshold=low_confidence_threshold,
+            insufficient_similarity_threshold=insufficient_similarity_threshold,
+            min_supporting_memories=max(1, min_supporting_memories),
+        )
+        judge_policy = RefinementAcceptPolicy(
+            min_support_coverage_gain=max(0.0, min_support_coverage_gain),
+            min_preference_alignment_gain=max(0.0, min_preference_alignment_gain),
+            max_support_coverage_drop=max(0.0, max_support_coverage_drop),
+        )
+
+        self.claim_extractor = ClaimExtractor()
+        self.objective_router = RefinementObjectiveRouter(policy=objective_policy)
+        self.requery_builder = RequeryBuilder()
+        self.judge = ClaimAwareRefinementJudge(policy=judge_policy)
 
     def refine(
         self,
@@ -97,10 +101,19 @@ class IterativeReasoningEngine:
 
         draft_support = self._support_score(initial_retrieved)
         current_support = draft_support
+
+        draft_claims = self.claim_extractor.extract_claims(
+            draft_answer=draft_response,
+            user_input=user_input,
+            processed=processed,
+        )
+        draft_summary = self.judge.verify_claims(draft_claims, initial_retrieved)
+        current_summary = draft_summary
+
         refinement_triggered = False
         iterations_used = 1
         trigger_reasons: list[str] = []
-        conflict_detected = self._has_conflicting_memories(current_retrieved)
+        conflict_detected = self.judge.has_conflicting_memories(current_retrieved)
         factual_attempted = False
         factual_improved = False
         preference_attempted = False
@@ -109,22 +122,29 @@ class IterativeReasoningEngine:
         support_improved = False
         conflict_attempted = False
         conflict_fixed = False
+        refinement_regressed = False
+        retrieval_improved_but_answer_worsened = False
+        refinement_improved = False
 
         for iteration in range(2, self.max_iterations + 1):
             iterations_used = iteration
-            objectives = self._derive_objectives(
+            has_mismatch = self.judge.answer_memory_mismatch(current_response, current_retrieved)
+            objectives = self.objective_router.derive(
                 user_input=user_input,
                 processed=processed,
-                draft_answer=current_response,
-                retrieved=current_retrieved,
+                has_conflict=self.judge.has_conflicting_memories(current_retrieved),
+                has_fact_support=self.judge.has_fact_support(current_retrieved),
+                has_preference_support=self.judge.has_preference_support(current_retrieved),
+                answer_memory_mismatch=has_mismatch,
                 current_support=current_support,
+                retrieved=current_retrieved,
             )
-            objective_routes = self._objective_routes(objectives)
+            objective_routes = self.objective_router.objective_routes(objectives)
             if not objective_routes:
                 break
+
             refinement_triggered = True
             trigger_reasons.extend(objective_routes)
-
             if objectives.factual_correction:
                 factual_attempted = True
             if objectives.preference_alignment:
@@ -134,19 +154,18 @@ class IterativeReasoningEngine:
             if objectives.conflict_resolution:
                 conflict_attempted = True
 
-            problematic_claims = self._extract_problematic_claims(
+            unresolved_types = self.objective_router.prioritized_unresolved_types(objectives)
+            claim_priority = self.objective_router.claim_priority_for_query(
                 user_input=user_input,
-                draft_answer=current_response,
-                retrieved=current_retrieved,
-                objectives=objectives,
+                processed=processed,
             )
-            unresolved_types = self._prioritized_unresolved_types(objectives)
-            requery = self._build_requery(
+            requery = self.requery_builder.build(
                 user_input=user_input,
                 draft_answer=current_response,
                 routes=objective_routes,
-                problematic_claims=problematic_claims,
                 unresolved_types=unresolved_types,
+                claim_priority=claim_priority,
+                claim_assessments=current_summary.assessments,
             )
             reretrieved = memory_retriever.retrieve(
                 query=requery,
@@ -161,47 +180,92 @@ class IterativeReasoningEngine:
                 retrieved=reretrieved,
                 plan=refined_plan,
             )
-
             refined_support = self._support_score(reretrieved)
-            support_gain = refined_support > (current_support + self.support_gain_margin)
-            support_not_worse = refined_support >= (current_support - 0.02)
-            final_mismatch = self._answer_memory_mismatch(refined_response, reretrieved)
-            final_conflict = self._has_conflicting_memories(reretrieved)
-            conflict_detected = conflict_detected or objectives.conflict_resolution or final_mismatch
+            refined_claims = self.claim_extractor.extract_claims(
+                draft_answer=refined_response,
+                user_input=user_input,
+                processed=processed,
+            )
+            refined_summary = self.judge.verify_claims(refined_claims, reretrieved)
+
+            final_conflict = self.judge.has_conflicting_memories(reretrieved)
+            final_mismatch = self.judge.answer_memory_mismatch(refined_response, reretrieved)
+            conflict_detected = (
+                conflict_detected
+                or objectives.conflict_resolution
+                or final_conflict
+                or final_mismatch
+            )
+
+            decision = self.judge.judge_refinement(
+                draft_summary=current_summary,
+                refined_summary=refined_summary,
+                draft_support_score=current_support,
+                refined_support_score=refined_support,
+                support_gain_margin=self.support_gain_margin,
+            )
+
+            # Reject risky updates: retrieval can improve while generated answer still mismatches evidence.
+            if final_mismatch and decision.apply_refinement:
+                decision.apply_refinement = False
+                decision.regression = True
+                decision.retrieval_improved_but_answer_worsened = True
+                decision.reasons.append("final_answer_memory_mismatch")
 
             factual_step_improved = objectives.factual_correction and (
-                self._has_fact_support(reretrieved) and not final_mismatch and support_not_worse
+                decision.support_coverage_increased
+                or decision.unsupported_reduced
+                or decision.contradiction_reduced
+                or (
+                    decision.apply_refinement
+                    and self.judge.has_fact_support(reretrieved)
+                    and (not final_mismatch)
+                )
             )
             preference_step_improved = objectives.preference_alignment and (
-                self._has_preference_support(reretrieved) and support_not_worse
+                decision.preference_alignment_improved
             )
             support_step_improved = objectives.support_completion and (
-                (not self._insufficient_supporting_memory(reretrieved)) or support_gain
+                decision.support_coverage_increased
+                or decision.unsupported_reduced
+                or (
+                    decision.apply_refinement
+                    and (
+                        not self.objective_router.insufficient_supporting_memory(reretrieved)
+                        or refined_support > (current_support + self.support_gain_margin)
+                    )
+                )
             )
-            conflict_step_fixed = objectives.conflict_resolution and (not final_conflict)
+            conflict_step_fixed = objectives.conflict_resolution and (
+                decision.contradiction_reduced and (not final_conflict)
+            )
 
             factual_improved = factual_improved or factual_step_improved
             preference_improved = preference_improved or preference_step_improved
             support_improved = support_improved or support_step_improved
             conflict_fixed = conflict_fixed or conflict_step_fixed
-
-            should_apply_refinement = any(
-                [factual_step_improved, preference_step_improved, support_step_improved, conflict_step_fixed]
+            refinement_regressed = refinement_regressed or (
+                decision.apply_refinement and decision.regression
             )
-            if not should_apply_refinement and support_gain and support_not_worse:
-                should_apply_refinement = True
+            retrieval_improved_but_answer_worsened = (
+                retrieval_improved_but_answer_worsened
+                or decision.retrieval_improved_but_answer_worsened
+            )
 
-            if should_apply_refinement:
+            if decision.apply_refinement:
                 current_response = refined_response
                 current_plan = refined_plan
                 current_retrieved = reretrieved
                 current_support = refined_support
+                current_summary = refined_summary
+                refinement_improved = refinement_improved or decision.improvement
 
             # v2 currently uses up to 2-pass by default.
             if self.max_iterations <= 2:
                 break
 
         final_trigger_reasons = list(dict.fromkeys(trigger_reasons))
+        answer_changed = current_response.strip() != draft_response.strip()
         return IterativeRefinementResult(
             response=current_response,
             plan=current_plan,
@@ -209,7 +273,7 @@ class IterativeReasoningEngine:
             iterations_used=iterations_used,
             refinement_triggered=refinement_triggered,
             conflict_detected=conflict_detected,
-            answer_changed=current_response.strip() != draft_response.strip(),
+            answer_changed=answer_changed,
             iteration_gain=current_support - draft_support,
             trigger_reasons=final_trigger_reasons,
             draft_support_score=draft_support,
@@ -222,26 +286,19 @@ class IterativeReasoningEngine:
             support_completion_improved=support_improved,
             conflict_fix_attempted=conflict_attempted,
             conflict_fix_succeeded=conflict_fixed,
-        )
-
-    def _build_requery(
-        self,
-        user_input: str,
-        draft_answer: str,
-        routes: list[str],
-        problematic_claims: list[str],
-        unresolved_types: list[str],
-    ) -> str:
-        claims_text = "\n".join(f"- {claim}" for claim in problematic_claims) or "- none"
-        routes_text = ", ".join(routes) or "none"
-        unresolved_text = ", ".join(unresolved_types) or "general"
-        return (
-            f"Original query:\n{user_input}\n\n"
-            f"Draft answer for refinement:\n{draft_answer}\n\n"
-            f"Refinement routes: {routes_text}\n"
-            f"Prioritize unresolved memory types: {unresolved_text}\n"
-            f"Problematic claims to verify:\n{claims_text}\n\n"
-            "Re-check memory consistency, complete missing evidence, and resolve conflicts."
+            claim_support_coverage=current_summary.support_coverage,
+            unsupported_claim_rate=current_summary.unsupported_rate,
+            contradiction_reduced=current_summary.contradicted_count < draft_summary.contradicted_count,
+            refinement_regressed=refinement_regressed,
+            retrieval_improved_but_answer_worsened=retrieval_improved_but_answer_worsened,
+            answer_changed_without_support_improvement=(
+                answer_changed
+                and current_summary.support_coverage <= draft_summary.support_coverage
+            ),
+            unsupported_claims_remaining=current_summary.unsupported_count > 0,
+            refinement_improved=refinement_improved,
+            draft_claim_support_coverage=draft_summary.support_coverage,
+            draft_unsupported_claim_rate=draft_summary.unsupported_rate,
         )
 
     def _support_score(self, retrieved: list[RetrievedMemory]) -> float:
@@ -257,186 +314,3 @@ class IterativeReasoningEngine:
             )
             scores.append(score)
         return sum(scores) / len(scores)
-
-    def _insufficient_supporting_memory(self, retrieved: list[RetrievedMemory]) -> bool:
-        if len(retrieved) < self.min_supporting_memories:
-            return True
-        return retrieved[0].similarity_score < self.insufficient_similarity_threshold
-
-    def _derive_objectives(
-        self,
-        *,
-        user_input: str,
-        processed: ProcessedInput,
-        draft_answer: str,
-        retrieved: list[RetrievedMemory],
-        current_support: float,
-    ) -> RefinementObjectives:
-        low_confidence = current_support < self.low_confidence_threshold
-        insufficient_support = self._insufficient_supporting_memory(retrieved)
-        conflict_resolution = self._has_conflicting_memories(retrieved)
-
-        fact_query = self._is_fact_query(user_input=user_input, processed=processed)
-        preference_query = self._is_preference_query(user_input=user_input, processed=processed)
-        fact_gap = fact_query and (
-            insufficient_support
-            or (not self._has_fact_support(retrieved))
-            or self._answer_memory_mismatch(draft_answer, retrieved)
-        )
-        preference_mismatch = preference_query and (not self._has_preference_support(retrieved))
-
-        return RefinementObjectives(
-            factual_correction=fact_gap,
-            preference_alignment=preference_mismatch,
-            conflict_resolution=conflict_resolution,
-            support_completion=insufficient_support,
-            low_confidence=low_confidence,
-        )
-
-    def _objective_routes(self, objectives: RefinementObjectives) -> list[str]:
-        routes: list[str] = []
-        if objectives.conflict_resolution:
-            routes.append("conflict_triggered_refinement")
-        if objectives.factual_correction:
-            routes.append("fact_gap_refinement")
-        if objectives.preference_alignment:
-            routes.append("preference_mismatch_refinement")
-        if objectives.support_completion or objectives.low_confidence:
-            routes.append("support_completion_refinement")
-        return routes
-
-    def _prioritized_unresolved_types(self, objectives: RefinementObjectives) -> list[str]:
-        types: list[str] = []
-        if objectives.factual_correction:
-            types.append("fact")
-        if objectives.preference_alignment:
-            types.append("preference")
-        if objectives.conflict_resolution:
-            types.append("conflict")
-        if objectives.support_completion:
-            types.append("support")
-        return list(dict.fromkeys(types))
-
-    def _extract_problematic_claims(
-        self,
-        *,
-        user_input: str,
-        draft_answer: str,
-        retrieved: list[RetrievedMemory],
-        objectives: RefinementObjectives,
-    ) -> list[str]:
-        claims: list[str] = []
-        combined = f"{user_input}\n{draft_answer}".lower()
-        for key in ["budget", "예산", "deadline", "마감", "price", "가격", "version", "버전"]:
-            if key in combined:
-                claims.append(f"verify key={key}")
-
-        numbers = re.findall(r"\d+(?:\.\d+)?", draft_answer.lower())
-        for number in dict.fromkeys(numbers):
-            claims.append(f"verify numeric claim={number}")
-
-        if objectives.conflict_resolution:
-            conflict_keys = self._conflicting_keys(retrieved)
-            for key in conflict_keys:
-                claims.append(f"resolve conflicting key={key}")
-
-        if objectives.preference_alignment:
-            claims.append("verify preference style/tone constraints")
-
-        if objectives.support_completion:
-            claims.append("collect missing supporting memory evidence")
-
-        return list(dict.fromkeys(claims))
-
-    def _has_conflicting_memories(self, retrieved: list[RetrievedMemory]) -> bool:
-        grouped: dict[str, set[str]] = {}
-        for item in retrieved:
-            memory = item.memory
-            if memory.memory_type is not MemoryType.SEMANTIC:
-                continue
-            if "fact" not in {tag.lower() for tag in memory.tags}:
-                continue
-            key, value = self._extract_fact_kv(memory.content)
-            if not key or not value:
-                continue
-            grouped.setdefault(key, set()).add(value)
-        return any(len(values) > 1 for values in grouped.values())
-
-    def _conflicting_keys(self, retrieved: list[RetrievedMemory]) -> list[str]:
-        grouped: dict[str, set[str]] = {}
-        for item in retrieved:
-            memory = item.memory
-            if memory.memory_type is not MemoryType.SEMANTIC:
-                continue
-            if "fact" not in {tag.lower() for tag in memory.tags}:
-                continue
-            key, value = self._extract_fact_kv(memory.content)
-            if not key or not value:
-                continue
-            grouped.setdefault(key, set()).add(value)
-        return [key for key, values in grouped.items() if len(values) > 1]
-
-    def _extract_fact_kv(self, content: str) -> tuple[str, str]:
-        lowered = content.lower()
-        structured = re.search(r"key=([a-z_]+)\s*;\s*value=([^;]+)", lowered)
-        if structured:
-            return structured.group(1).strip(), self._normalize_value(structured.group(2))
-
-        num = re.search(r"(\d+(?:\.\d+)?)", lowered)
-        key = ""
-        if "budget" in lowered or "예산" in lowered:
-            key = "budget"
-        elif "deadline" in lowered or "마감" in lowered:
-            key = "deadline"
-        elif "price" in lowered or "가격" in lowered:
-            key = "price"
-        elif "version" in lowered or "버전" in lowered:
-            key = "version"
-        if key and num:
-            return key, num.group(1)
-        return "", ""
-
-    def _normalize_value(self, raw: str) -> str:
-        value = raw.strip().lower()
-        numeric = re.search(r"\d+(?:\.\d+)?", value)
-        if numeric:
-            return numeric.group(0)
-        return value
-
-    def _answer_memory_mismatch(self, answer: str, retrieved: list[RetrievedMemory]) -> bool:
-        if not answer or not retrieved:
-            return False
-
-        answer_lower = answer.lower()
-        memory_text = " ".join(item.memory.content.lower() for item in retrieved)
-        anchors = [
-            ("budget", ["budget", "예산"]),
-            ("deadline", ["deadline", "마감"]),
-            ("price", ["price", "가격"]),
-            ("version", ["version", "버전"]),
-        ]
-        for _, alias_tokens in anchors:
-            if any(token in answer_lower for token in alias_tokens) and not any(
-                token in memory_text for token in alias_tokens
-            ):
-                return True
-
-        return False
-
-    def _is_fact_query(self, *, user_input: str, processed: ProcessedInput) -> bool:
-        if InputType.FACT in processed.input_types:
-            return True
-        lowered = user_input.lower()
-        return any(token in lowered for token in self._fact_keywords)
-
-    def _is_preference_query(self, *, user_input: str, processed: ProcessedInput) -> bool:
-        if InputType.PREFERENCE in processed.input_types:
-            return True
-        lowered = user_input.lower()
-        return any(token in lowered for token in self._preference_keywords)
-
-    def _has_fact_support(self, retrieved: list[RetrievedMemory]) -> bool:
-        return any("fact" in {tag.lower() for tag in item.memory.tags} for item in retrieved[:3])
-
-    def _has_preference_support(self, retrieved: list[RetrievedMemory]) -> bool:
-        return any("preference" in {tag.lower() for tag in item.memory.tags} for item in retrieved[:3])

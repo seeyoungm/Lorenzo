@@ -26,6 +26,31 @@ v1.3 beta:
 - Preserved precision and stale-memory safety
 - No false-positive reintroduction observed
 
+## v2 Beta Update
+
+v2 beta:
+- iterative refinement를 heuristic 집합에서 `claim-aware verification loop` 구조로 승격
+- `iterative.py` 책임 축소 (루프 제어 중심)
+- 신규 모듈 분리:
+  - `claim_extractor.py`
+  - `refinement_objectives.py`
+  - `requery_builder.py`
+  - `refinement_judge.py`
+- pass-2 동작을 단순 재검색이 아닌 claim 검증 기반으로 전환
+- refinement accept/reject 규칙 강화:
+  - support coverage 증가
+  - contradiction 감소
+  - unsupported claim 감소
+  - preference alignment 개선
+  - `retrieval improved but answer worsened` 안전 reject
+- eval/telemetry 확장:
+  - `claim_support_coverage`
+  - `unsupported_claim_rate`
+  - `contradiction_reduction_rate`
+  - `refinement_regression_rate`
+  - `retrieval_improved_but_answer_worsened_rate`
+  - failure case JSONL dump (`--failure-dump`)
+- snapshot: `v2 beta` (iterative loop 구조/품질 계측 기준선 확정)
 ## v2-alpha Update
 
 Iterative Reasoning Engine (2-pass) 추가:
@@ -60,6 +85,7 @@ v2-alpha broad eval snapshot:
 - 응답 생성 전 메모리 검색 필수 수행
 - 검색 점수: `embedding semantic + recency + importance + lexical fallback`
 - 검색 보강: `score normalization + intent/type alignment + access boost + conflict penalty + diversity penalty + retrieval_reason + embedding cache`
+- 정책 분리: fallback/weak-override threshold + intent별 claim priority + refinement accept threshold를 선언형 policy로 분리
 - iterative reasoning:
   - objective-routed refinement (`fact gap / preference mismatch / conflict / support completion`)
   - error-focused re-query (problematic claim + unresolved memory type 기반)
@@ -102,7 +128,11 @@ lorenzo/
     store.py
     retriever.py
   reasoning/
+    claim_extractor.py
     planner.py
+    refinement_judge.py
+    refinement_objectives.py
+    requery_builder.py
     iterative.py
   language/
     adapter.py
@@ -180,6 +210,7 @@ pytest -q
 
 ```bash
 lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios.json
+lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios_broad.json --failure-dump /tmp/lorenzo_failures.jsonl
 ```
 
 평가셋 구성:
@@ -227,6 +258,11 @@ lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios
 - `weak_memory_promotion_rate`
 - `false_positive_reintroduced_rate`
 - `goal_recall_recovery_rate`
+- `claim_support_coverage`
+- `unsupported_claim_rate`
+- `contradiction_reduction_rate`
+- `refinement_regression_rate`
+- `retrieval_improved_but_answer_worsened_rate`
 - `refinement_improvement_rate`
 - `conflict_detected_rate`
 - `answer_change_rate`

@@ -63,6 +63,15 @@ class UpdateTelemetry:
     support_completion_successes: int = 0
     conflict_fix_attempts: int = 0
     conflict_fix_successes: int = 0
+    claim_support_coverage_total: float = 0.0
+    unsupported_claim_rate_total: float = 0.0
+    draft_claim_support_coverage_total: float = 0.0
+    draft_unsupported_claim_rate_total: float = 0.0
+    contradiction_reduction_count: int = 0
+    refinement_regression_count: int = 0
+    retrieval_improved_but_answer_worsened_count: int = 0
+    answer_changed_without_support_gain_count: int = 0
+    unsupported_claim_remaining_count: int = 0
 
 
 @dataclass(slots=True)
@@ -98,6 +107,7 @@ class LorenzoOrchestrator:
             max_iterations=iterative_reasoning_max_iterations
         )
         self._telemetry = UpdateTelemetry()
+        self._last_refinement = None
 
     @classmethod
     def from_config(cls, config: AppConfig) -> "LorenzoOrchestrator":
@@ -164,6 +174,7 @@ class LorenzoOrchestrator:
             language_adapter=self.modules.language_adapter,
             top_k=self.top_k,
         )
+        self._last_refinement = refinement
 
         # Keep primary retrieval semantics stable for storage/eval compatibility.
         retrieved = retrieved_pass1
@@ -180,9 +191,27 @@ class LorenzoOrchestrator:
                 self._telemetry.refinement_conflict_detected_count += 1
             if refinement.answer_changed:
                 self._telemetry.refinement_answer_changed_count += 1
-            if refinement.iteration_gain > 0:
+            if refinement.refinement_improved:
                 self._telemetry.refinement_improvement_count += 1
             self._telemetry.iteration_gain_total += refinement.iteration_gain
+            self._telemetry.claim_support_coverage_total += refinement.claim_support_coverage
+            self._telemetry.unsupported_claim_rate_total += refinement.unsupported_claim_rate
+            self._telemetry.draft_claim_support_coverage_total += (
+                refinement.draft_claim_support_coverage
+            )
+            self._telemetry.draft_unsupported_claim_rate_total += (
+                refinement.draft_unsupported_claim_rate
+            )
+            if refinement.contradiction_reduced:
+                self._telemetry.contradiction_reduction_count += 1
+            if refinement.refinement_regressed:
+                self._telemetry.refinement_regression_count += 1
+            if refinement.retrieval_improved_but_answer_worsened:
+                self._telemetry.retrieval_improved_but_answer_worsened_count += 1
+            if refinement.answer_changed_without_support_improvement:
+                self._telemetry.answer_changed_without_support_gain_count += 1
+            if refinement.unsupported_claims_remaining:
+                self._telemetry.unsupported_claim_remaining_count += 1
         if refinement.factual_refinement_attempted:
             self._telemetry.factual_refinement_attempts += 1
         if refinement.factual_refinement_improved:
@@ -253,7 +282,19 @@ class LorenzoOrchestrator:
             support_completion_successes=self._telemetry.support_completion_successes,
             conflict_fix_attempts=self._telemetry.conflict_fix_attempts,
             conflict_fix_successes=self._telemetry.conflict_fix_successes,
+            claim_support_coverage_total=self._telemetry.claim_support_coverage_total,
+            unsupported_claim_rate_total=self._telemetry.unsupported_claim_rate_total,
+            draft_claim_support_coverage_total=self._telemetry.draft_claim_support_coverage_total,
+            draft_unsupported_claim_rate_total=self._telemetry.draft_unsupported_claim_rate_total,
+            contradiction_reduction_count=self._telemetry.contradiction_reduction_count,
+            refinement_regression_count=self._telemetry.refinement_regression_count,
+            retrieval_improved_but_answer_worsened_count=self._telemetry.retrieval_improved_but_answer_worsened_count,
+            answer_changed_without_support_gain_count=self._telemetry.answer_changed_without_support_gain_count,
+            unsupported_claim_remaining_count=self._telemetry.unsupported_claim_remaining_count,
         )
+
+    def last_refinement_result(self):
+        return self._last_refinement
 
     def _update_memories(self, processed: ProcessedInput) -> None:
         now = datetime.now(timezone.utc)
