@@ -61,3 +61,71 @@ def test_memory_recall_detection() -> None:
 
     assert InputType.MEMORY_RECALL in recall.input_types
     assert InputType.QUESTION in recall.input_types
+
+
+def test_goal_requires_target_state_or_long_term_signal() -> None:
+    processor = InputProcessor()
+
+    goal = processor.process("장기적으로 메모리 중심 AI 아키텍처를 완성하는 게 목표야")
+    non_goal = processor.process("오늘 커피 마시고 싶어")
+
+    assert InputType.GOAL_STATEMENT in goal.input_types
+    assert InputType.GOAL_STATEMENT not in non_goal.input_types
+
+
+def test_preference_is_style_behavior_not_commitment() -> None:
+    processor = InputProcessor()
+
+    preference = processor.process("답변 스타일은 간결한 bullet 형식을 선호해")
+    commitment_like = processor.process("답변을 간결하게 줄게")
+
+    assert InputType.PREFERENCE in preference.input_types
+    assert InputType.COMMITMENT not in preference.input_types
+    assert InputType.COMMITMENT not in commitment_like.input_types
+    assert InputType.PREFERENCE not in commitment_like.input_types
+
+
+def test_commitment_detects_explicit_promise_and_scheduled_future_action() -> None:
+    processor = InputProcessor()
+
+    explicit = processor.process("I will send the report tomorrow.")
+    scheduled = processor.process("나는 내일까지 문서를 제출하겠다")
+    promise_tone = processor.process("나는 약속한다, 보고서를 제출하겠다")
+
+    assert InputType.COMMITMENT in explicit.input_types
+    assert InputType.COMMITMENT in scheduled.input_types
+    assert InputType.COMMITMENT in promise_tone.input_types
+
+
+def test_commitment_takes_priority_over_goal_and_preference_when_overlapping() -> None:
+    processor = InputProcessor()
+
+    result = processor.process("나는 내일까지 문서를 제출할게, 이후에는 품질을 높이고 싶어")
+
+    assert result.input_type is InputType.COMMITMENT
+
+
+def test_vague_intention_is_not_commitment() -> None:
+    processor = InputProcessor()
+
+    result = processor.process("나는 내일 문서를 생각해볼게")
+
+    assert InputType.COMMITMENT not in result.input_types
+
+
+def test_speculative_statement_is_not_commitment() -> None:
+    processor = InputProcessor()
+
+    result = processor.process("아마 내일 문서를 제출할 수도 있어")
+
+    assert InputType.COMMITMENT not in result.input_types
+
+
+def test_commitment_requires_clear_subject() -> None:
+    processor = InputProcessor()
+
+    no_subject = processor.process("내일까지 문서를 제출하겠다")
+    with_subject = processor.process("나는 내일까지 문서를 제출하겠다")
+
+    assert InputType.COMMITMENT not in no_subject.input_types
+    assert InputType.COMMITMENT in with_subject.input_types

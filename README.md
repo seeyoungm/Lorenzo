@@ -2,6 +2,21 @@
 
 Memory-Centric + Modular Intelligence 구조를 가진 Python AI 프로토타입입니다.
 
+## v1.2 Status
+
+Key improvements:
+- strict goal classification (`strong_goal` vs `weak_goal`)
+- commitment precision improved to `1.0`
+- elimination of false goal memories (goal boundary eval 기준)
+- expanded evaluation (`380` scenarios, `270`-turn long sessions)
+
+Trade-offs:
+- stricter storage policy로 인해 `retrieval_top1` 하락
+
+Status:
+- memory semantics stabilized
+- next focus: retrieval recall recovery
+
 ## 핵심 특징
 
 - 모듈형 파이프라인
@@ -17,7 +32,18 @@ Memory-Centric + Modular Intelligence 구조를 가진 Python AI 프로토타입
 - 다국어 유사도 지원(한국어/영어 개념 정규화 기반)
 - memory type 구분: `episodic / semantic / working`
 - 저장 정책: `importance threshold(상향) + deduplication + pre-write semantic summary synthesis + type filter`
-- conflict resolution 정책: `latest_wins + conflict_history` (fact 충돌 시)
+- intent 경계 규칙 강화:
+  - `goal`: `strong_goal / weak_goal` 구분(semantic 저장은 strong만)
+    - strong 조건: 미래 지향 + 달성/변환 의도 + 비일시적 지속성
+    - strong 제외: wish / opinion / temporary desire / conversational meta
+  - `preference`: 스타일/행동 선호 (commitment와 분리)
+  - `commitment`: 명시적 약속/미래 실행 선언/스케줄 액션
+- conflict resolution 정책(타입별):
+  - `goal`: latest wins + history 보존
+  - `preference`: latest wins + 이전값 inactive history
+  - `fact`: 자동 overwrite 금지, keep-both + conflict 마킹
+  - `commitment`: 명시적 confirmation 신호 없으면 overwrite 금지
+  - `event`: timestamp 기준 분리 보존
 - 교체 가능한 language backend (`rule_based`, `echo`)
 - CLI 데모 제공
 - baseline 비교 평가 CLI (`lorenzo-eval`)
@@ -46,6 +72,8 @@ lorenzo/
 tests/
 sample_data/
   eval_scenarios.json
+  eval_scenarios_broad.json
+  eval_scenarios_goal_refinement.json
 config.example.toml
 ```
 
@@ -117,8 +145,9 @@ lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios
 ```
 
 평가셋 구성:
-- 총 168 시나리오
-- long session 120턴 포함 (noise/contradiction/paraphrase drift)
+- 기본: `sample_data/eval_scenarios.json`
+- 확장: `sample_data/eval_scenarios_broad.json` (380 시나리오, 100+ turn long session 포함)
+- goal 경계 전용: `sample_data/eval_scenarios_goal_refinement.json` (24 시나리오)
 - paraphrase / cross-language / misleading / conflicting memory / merge-stress / boundary 케이스 포함
 
 출력 지표:
@@ -132,11 +161,28 @@ lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios
 - `retrieval_degradation_over_time`
 - `merge_activation_rate`
 - `false_merge_rate`
+- `merge_false_reject_rate`
+- `merge_candidate_similarity_avg`
+- `merge_rejected_reason`
+- `rejected_count_by_type`
 - `merge_success_count`
 - `merge_rejected_count`
 - `conflict_resolution_count`
 - `conflict_resolution_accuracy`
 - `stale_memory_usage_rate`
+- `recall_by_type` (`goal/fact/preference/commitment/event`)
+- `precision_by_type`
+- `storage_rate_by_type`
+- `conflict_rate_by_type`
+- `retrieval_top1_over_time`
+- `conflict_accumulation_rate`
+- `goal_precision_strong`
+- `goal_recall_strong`
+- `weak_goal_rate`
+- `false_goal_from_wish_rate`
+- `false_goal_from_opinion_rate`
+- `false_goal_from_temporary_desire_rate`
+- `goal_intrusion_rate_in_retrieval_top1`
 
 ## 구현 우선순위 매핑
 

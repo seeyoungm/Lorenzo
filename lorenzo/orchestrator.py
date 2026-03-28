@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import re
 
@@ -35,9 +35,25 @@ class UpdateTelemetry:
     merge_attempts: int = 0
     merge_success_count: int = 0
     merge_rejected_count: int = 0
+    merge_false_reject_count: int = 0
+    merge_false_reject_rate: float = 0.0
+    merge_rejected_reason: dict[str, int] = field(default_factory=dict)
+    merge_candidate_similarity: list[float] = field(default_factory=list)
+    rejected_count_by_type: dict[str, int] = field(default_factory=dict)
     merge_applied: int = 0
     false_merge_attempts: int = 0
     conflict_resolved: int = 0
+    conflict_count_by_type: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ConflictResolutionResult:
+    conflict_strategy: str
+    conflict_reason: str
+    changed: bool
+    conflict_type: str | None = None
+    keep_both: bool = False
+    requires_confirmation: bool = False
 
 
 class LorenzoOrchestrator:
@@ -113,15 +129,26 @@ class LorenzoOrchestrator:
         )
 
     def snapshot_telemetry(self) -> UpdateTelemetry:
+        false_reject_rate = (
+            self._telemetry.merge_false_reject_count / self._telemetry.merge_rejected_count
+            if self._telemetry.merge_rejected_count > 0
+            else 0.0
+        )
         return UpdateTelemetry(
             turns=self._telemetry.turns,
             candidates_seen=self._telemetry.candidates_seen,
             merge_attempts=self._telemetry.merge_attempts,
             merge_success_count=self._telemetry.merge_success_count,
             merge_rejected_count=self._telemetry.merge_rejected_count,
+            merge_false_reject_count=self._telemetry.merge_false_reject_count,
+            merge_false_reject_rate=false_reject_rate,
+            merge_rejected_reason=dict(self._telemetry.merge_rejected_reason),
+            merge_candidate_similarity=list(self._telemetry.merge_candidate_similarity),
+            rejected_count_by_type=dict(self._telemetry.rejected_count_by_type),
             merge_applied=self._telemetry.merge_applied,
             false_merge_attempts=self._telemetry.false_merge_attempts,
             conflict_resolved=self._telemetry.conflict_resolved,
+            conflict_count_by_type=dict(self._telemetry.conflict_count_by_type),
         )
 
     def _update_memories(self, processed: ProcessedInput) -> None:
@@ -137,31 +164,35 @@ class LorenzoOrchestrator:
             if not is_working_question and candidate.importance < self.min_importance_to_store:
                 continue
 
+            if candidate.memory_type is MemoryType.EPISODIC and "event" in {tag.lower() for tag in candidate.tags}:
+                self._attach_event_timestamp(candidate, now)
+                if self._mark_event_conflict_if_any(existing, candidate, now):
+                    self._telemetry.conflict_resolved += 1
+                    self._increment_conflict_type("event")
+                existing.append(candidate)
+                changed = True
+                continue
+
             match_index, match_similarity = self._find_best_match(existing, candidate)
             if match_index >= 0 and match_similarity >= self.dedup_similarity_threshold:
                 self._merge_duplicate(existing[match_index], candidate, match_similarity, now)
                 changed = True
                 continue
 
-            if (
-                candidate.memory_type is MemoryType.SEMANTIC
-                and match_index >= 0
-                and self._should_resolve_conflict(existing[match_index], candidate)
-            ):
-                self._resolve_conflict_latest_wins(existing[match_index], candidate, now)
-                self._telemetry.conflict_resolved += 1
-                changed = True
-                continue
-
-            if (
-                candidate.memory_type is MemoryType.EPISODIC
-                and match_index >= 0
-                and self._should_resolve_event_conflict(existing[match_index], candidate)
-            ):
-                self._resolve_conflict_latest_wins(existing[match_index], candidate, now)
-                self._telemetry.conflict_resolved += 1
-                changed = True
-                continue
+            if candidate.memory_type is MemoryType.SEMANTIC and match_index >= 0:
+                resolution = self._resolve_semantic_conflict_by_policy(
+                    existing=existing,
+                    match_index=match_index,
+                    candidate=candidate,
+                    similarity=match_similarity,
+                    now=now,
+                )
+                if resolution is not None and resolution.changed:
+                    self._telemetry.conflict_resolved += 1
+                    if resolution.conflict_type:
+                        self._increment_conflict_type(resolution.conflict_type)
+                    changed = True
+                    continue
 
             if (
                 candidate.memory_type is MemoryType.SEMANTIC
@@ -169,15 +200,26 @@ class LorenzoOrchestrator:
                 and match_similarity >= self.semantic_merge_similarity_threshold
             ):
                 self._telemetry.merge_attempts += 1
+                self._telemetry.merge_candidate_similarity.append(round(match_similarity, 3))
                 confidence = self._merge_confidence(existing[match_index], candidate, match_similarity)
                 if confidence < self.merge_confidence_threshold:
-                    self._telemetry.merge_rejected_count += 1
+                    self._record_merge_rejection(
+                        reason="low_confidence",
+                        candidate=candidate,
+                        similarity=match_similarity,
+                        false_reject=(match_similarity >= 0.88),
+                    )
                     existing.append(candidate)
                     changed = True
                     continue
 
                 if self._is_false_merge_candidate(existing[match_index], candidate):
-                    self._telemetry.merge_rejected_count += 1
+                    self._record_merge_rejection(
+                        reason="safety_guard",
+                        candidate=candidate,
+                        similarity=match_similarity,
+                        false_reject=False,
+                    )
                     existing.append(candidate)
                     changed = True
                     continue
@@ -348,17 +390,176 @@ class LorenzoOrchestrator:
             score -= 0.8
         return max(0.0, min(10.0, score))
 
-    def _should_resolve_conflict(self, existing: MemoryItem, candidate: MemoryItem) -> bool:
-        existing_tags = {tag.lower() for tag in existing.tags}
-        candidate_tags = {tag.lower() for tag in candidate.tags}
-        if "fact" not in existing_tags or "fact" not in candidate_tags:
-            return False
+    def _resolve_semantic_conflict_by_policy(
+        self,
+        existing: list[MemoryItem],
+        match_index: int,
+        candidate: MemoryItem,
+        similarity: float,
+        now: datetime,
+    ) -> ConflictResolutionResult | None:
+        current = existing[match_index]
+        existing_kind = self._semantic_kind(current)
+        candidate_kind = self._semantic_kind(candidate)
+        if existing_kind != candidate_kind:
+            return None
 
+        if candidate_kind == "goal":
+            if not self._is_semantic_conflict_candidate(current, candidate, similarity):
+                return None
+            self._apply_latest_wins_with_history(
+                current,
+                candidate,
+                now,
+                history_key="goal_history",
+                history_status="archived",
+            )
+            self._annotate_conflict_resolution(
+                current,
+                conflict_strategy="latest_wins",
+                conflict_reason="goal_update_latest_wins",
+                now=now,
+            )
+            return ConflictResolutionResult(
+                conflict_strategy="latest_wins",
+                conflict_reason="goal_update_latest_wins",
+                changed=True,
+                conflict_type="goal",
+            )
+
+        if candidate_kind == "preference":
+            if not self._is_semantic_conflict_candidate(current, candidate, similarity):
+                return None
+            self._apply_latest_wins_with_history(
+                current,
+                candidate,
+                now,
+                history_key="preference_history",
+                history_status="inactive",
+            )
+            self._annotate_conflict_resolution(
+                current,
+                conflict_strategy="latest_wins",
+                conflict_reason="preference_update_latest_wins",
+                now=now,
+            )
+            return ConflictResolutionResult(
+                conflict_strategy="latest_wins",
+                conflict_reason="preference_update_latest_wins",
+                changed=True,
+                conflict_type="preference",
+            )
+
+        if candidate_kind == "fact":
+            if not self._is_fact_conflict(current, candidate):
+                return None
+            self._mark_fact_conflict_keep_both(current, candidate, now)
+            existing.append(candidate)
+            return ConflictResolutionResult(
+                conflict_strategy="keep_both_mark_conflict",
+                conflict_reason="fact_value_conflict",
+                changed=True,
+                conflict_type="fact",
+                keep_both=True,
+            )
+
+        if candidate_kind == "commitment":
+            if not self._is_semantic_conflict_candidate(current, candidate, similarity):
+                return None
+            if self._has_explicit_confirmation_signal(candidate.content):
+                self._apply_latest_wins_with_history(
+                    current,
+                    candidate,
+                    now,
+                    history_key="commitment_history",
+                    history_status="superseded_confirmed",
+                )
+                self._annotate_conflict_resolution(
+                    current,
+                    conflict_strategy="latest_wins_confirmed",
+                    conflict_reason="commitment_update_with_confirmation",
+                    now=now,
+                )
+                return ConflictResolutionResult(
+                    conflict_strategy="latest_wins_confirmed",
+                    conflict_reason="commitment_update_with_confirmation",
+                    changed=True,
+                    conflict_type="commitment",
+                )
+
+            self._mark_commitment_conflict_pending(current, candidate, now)
+            existing.append(candidate)
+            return ConflictResolutionResult(
+                conflict_strategy="require_explicit_confirmation",
+                conflict_reason="commitment_conflict_pending_confirmation",
+                changed=True,
+                conflict_type="commitment",
+                keep_both=True,
+                requires_confirmation=True,
+            )
+
+        return None
+
+    def _semantic_kind(self, memory: MemoryItem) -> str:
+        tags = {tag.lower() for tag in memory.tags}
+        if "goal" in tags or memory.content.startswith("User goal:"):
+            return "goal"
+        if "preference" in tags or memory.content.startswith("User preference:"):
+            return "preference"
+        if "fact" in tags or memory.content.startswith("User fact:"):
+            return "fact"
+        if "commitment" in tags or memory.content.startswith("User commitment:"):
+            return "commitment"
+        return "unknown"
+
+    def _is_semantic_conflict_candidate(
+        self,
+        existing: MemoryItem,
+        candidate: MemoryItem,
+        similarity: float,
+    ) -> bool:
+        return similarity >= 0.72 and existing.content.strip().lower() != candidate.content.strip().lower()
+
+    def _apply_latest_wins_with_history(
+        self,
+        existing: MemoryItem,
+        candidate: MemoryItem,
+        now: datetime,
+        history_key: str,
+        history_status: str,
+    ) -> None:
+        previous_content = existing.content
+        previous_importance = existing.importance
+        history = list(existing.metadata.get(history_key, []))
+        history.append(
+            {
+                "content": previous_content,
+                "importance": previous_importance,
+                "status": history_status,
+                "replaced_at": now.isoformat(),
+            }
+        )
+        existing.content = candidate.content
+        existing.importance = min(10.0, max(existing.importance, candidate.importance))
+        existing.metadata[history_key] = history[-20:]
+        existing.tags = sorted(set(existing.tags) | set(candidate.tags) | {"conflict_resolved"})
+
+    def _annotate_conflict_resolution(
+        self,
+        memory: MemoryItem,
+        conflict_strategy: str,
+        conflict_reason: str,
+        now: datetime,
+    ) -> None:
+        memory.metadata["conflict_strategy"] = conflict_strategy
+        memory.metadata["conflict_reason"] = conflict_reason
+        memory.metadata["last_conflict_at"] = now.isoformat()
+
+    def _is_fact_conflict(self, existing: MemoryItem, candidate: MemoryItem) -> bool:
         existing_key, existing_value = self._extract_fact_kv(existing.content)
         candidate_key, candidate_value = self._extract_fact_kv(candidate.content)
         if not existing_key or not candidate_key:
             return False
-
         key_similarity = self.modules.memory_retriever.text_similarity(existing_key, candidate_key)
         if key_similarity < 0.70:
             return False
@@ -366,21 +567,62 @@ class LorenzoOrchestrator:
             return False
         return True
 
-    def _resolve_conflict_latest_wins(self, existing: MemoryItem, candidate: MemoryItem, now: datetime) -> None:
-        history = list(existing.metadata.get("conflict_history", []))
-        history.append(
+    def _mark_fact_conflict_keep_both(self, existing: MemoryItem, candidate: MemoryItem, now: datetime) -> None:
+        existing_history = list(existing.metadata.get("fact_conflicts", []))
+        entry = {
+            "at": now.isoformat(),
+            "existing": existing.content,
+            "incoming": candidate.content,
+        }
+        existing_history.append(entry)
+        existing.metadata["fact_conflicts"] = existing_history[-20:]
+        existing.metadata["conflict_strategy"] = "keep_both_mark_conflict"
+        existing.metadata["conflict_reason"] = "fact_value_conflict"
+        existing.tags = sorted(set(existing.tags) | {"conflict"})
+
+        candidate.metadata["conflict_strategy"] = "keep_both_mark_conflict"
+        candidate.metadata["conflict_reason"] = "fact_value_conflict"
+        candidate.metadata["conflict_with"] = existing.memory_id
+        candidate.metadata["conflict_recorded_at"] = now.isoformat()
+        candidate.tags = sorted(set(candidate.tags) | {"conflict"})
+
+    def _mark_commitment_conflict_pending(
+        self, existing: MemoryItem, candidate: MemoryItem, now: datetime
+    ) -> None:
+        pending = list(existing.metadata.get("commitment_pending_conflicts", []))
+        pending.append(
             {
                 "at": now.isoformat(),
-                "previous": existing.content,
+                "existing": existing.content,
                 "incoming": candidate.content,
+                "status": "awaiting_confirmation",
             }
         )
-        existing.content = candidate.content
-        existing.importance = min(10.0, max(existing.importance, candidate.importance))
-        existing.metadata["conflict_policy"] = "latest_wins"
-        existing.metadata["conflict_history"] = history[-20:]
-        existing.metadata["last_conflict_at"] = now.isoformat()
-        existing.tags = sorted(set(existing.tags) | set(candidate.tags) | {"conflict_resolved"})
+        existing.metadata["commitment_pending_conflicts"] = pending[-20:]
+        existing.metadata["conflict_strategy"] = "require_explicit_confirmation"
+        existing.metadata["conflict_reason"] = "commitment_conflict_pending_confirmation"
+        existing.tags = sorted(set(existing.tags) | {"conflict_pending"})
+
+        candidate.metadata["conflict_strategy"] = "require_explicit_confirmation"
+        candidate.metadata["conflict_reason"] = "commitment_conflict_pending_confirmation"
+        candidate.metadata["needs_confirmation"] = True
+        candidate.metadata["conflict_with"] = existing.memory_id
+        candidate.tags = sorted(set(candidate.tags) | {"conflict_pending"})
+
+    def _has_explicit_confirmation_signal(self, content: str) -> bool:
+        lowered = content.lower()
+        signals = [
+            "confirm",
+            "confirmed",
+            "override",
+            "overwrite",
+            "덮어써",
+            "덮어쓰기",
+            "확정",
+            "확인",
+            "변경 확정",
+        ]
+        return any(token in lowered for token in signals)
 
     def _extract_fact_kv(self, content: str) -> tuple[str, str]:
         normalized = content.replace("User fact:", "").strip()
@@ -397,21 +639,54 @@ class LorenzoOrchestrator:
             return key, value
         return "", ""
 
-    def _should_resolve_event_conflict(self, existing: MemoryItem, candidate: MemoryItem) -> bool:
-        existing_tags = {tag.lower() for tag in existing.tags}
-        candidate_tags = {tag.lower() for tag in candidate.tags}
-        if "event" not in existing_tags or "event" not in candidate_tags:
+    def _attach_event_timestamp(self, candidate: MemoryItem, now: datetime) -> None:
+        event_ts = self._extract_event_timestamp(candidate.content) or now.isoformat()
+        candidate.metadata["event_timestamp"] = event_ts
+        candidate.metadata["conflict_strategy"] = "preserve_by_timestamp"
+        candidate.metadata["conflict_reason"] = "event_timeline_append"
+
+    def _mark_event_conflict_if_any(
+        self,
+        existing: list[MemoryItem],
+        candidate: MemoryItem,
+        now: datetime,
+    ) -> bool:
+        candidate_key, candidate_value = self._extract_event_kv(candidate.content)
+        if not candidate_key or not candidate_value:
             return False
 
-        existing_key, existing_value = self._extract_event_kv(existing.content)
-        candidate_key, candidate_value = self._extract_event_kv(candidate.content)
-        if not existing_key or not candidate_key:
-            return False
-        if existing_key != candidate_key:
-            return False
-        if existing_value == candidate_value:
-            return False
-        return True
+        conflicted = False
+        for item in existing:
+            if item.memory_type is not MemoryType.EPISODIC:
+                continue
+            if "event" not in {tag.lower() for tag in item.tags}:
+                continue
+            existing_key, existing_value = self._extract_event_kv(item.content)
+            if existing_key != candidate_key or not existing_value:
+                continue
+            if existing_value == candidate_value:
+                continue
+
+            history = list(item.metadata.get("event_conflicts", []))
+            history.append(
+                {
+                    "at": now.isoformat(),
+                    "previous": item.content,
+                    "incoming": candidate.content,
+                    "strategy": "preserve_by_timestamp",
+                }
+            )
+            item.metadata["event_conflicts"] = history[-20:]
+            item.metadata["conflict_strategy"] = "preserve_by_timestamp"
+            item.metadata["conflict_reason"] = "event_time_conflict_preserved"
+            item.tags = sorted(set(item.tags) | {"conflict"})
+            conflicted = True
+
+        if conflicted:
+            candidate.metadata["conflict_strategy"] = "preserve_by_timestamp"
+            candidate.metadata["conflict_reason"] = "event_time_conflict_preserved"
+            candidate.tags = sorted(set(candidate.tags) | {"conflict"})
+        return conflicted
 
     def _extract_event_kv(self, content: str) -> tuple[str, str]:
         normalized = content.replace("User event:", "").strip().lower()
@@ -423,11 +698,48 @@ class LorenzoOrchestrator:
             return "meeting_time", en.group(2).replace(" ", "")
         return "", ""
 
+    def _extract_event_timestamp(self, content: str) -> str | None:
+        normalized = content.lower()
+        with_date = re.search(r"(\d{4}-\d{2}-\d{2}[ t]\d{1,2}:\d{2})", normalized)
+        if with_date:
+            return with_date.group(1)
+        relative = re.search(r"(오늘|내일|모레).{0,16}?(\d{1,2}\s*시)", normalized)
+        if relative:
+            return f"{relative.group(1)}-{relative.group(2).replace(' ', '')}"
+        return None
+
     def _is_false_merge_candidate(self, existing: MemoryItem, candidate: MemoryItem) -> bool:
-        if self._should_resolve_conflict(existing, candidate):
+        if self._semantic_kind(existing) in {"fact", "commitment"}:
             return True
         overlap = self.modules.memory_retriever.text_similarity(existing.content, candidate.content)
         return overlap < 0.70
+
+    def _record_merge_rejection(
+        self,
+        reason: str,
+        candidate: MemoryItem,
+        similarity: float,
+        false_reject: bool,
+    ) -> None:
+        self._telemetry.merge_rejected_count += 1
+        self._telemetry.merge_rejected_reason[reason] = (
+            self._telemetry.merge_rejected_reason.get(reason, 0) + 1
+        )
+        kind = (
+            self._semantic_kind(candidate)
+            if candidate.memory_type is MemoryType.SEMANTIC
+            else candidate.memory_type.value
+        )
+        self._telemetry.rejected_count_by_type[kind] = self._telemetry.rejected_count_by_type.get(kind, 0) + 1
+        candidate.metadata["merge_rejected_reason"] = reason
+        candidate.metadata["merge_candidate_similarity"] = round(similarity, 3)
+        if false_reject:
+            self._telemetry.merge_false_reject_count += 1
+
+    def _increment_conflict_type(self, conflict_type: str) -> None:
+        self._telemetry.conflict_count_by_type[conflict_type] = (
+            self._telemetry.conflict_count_by_type.get(conflict_type, 0) + 1
+        )
 
     def _merge_confidence(self, existing: MemoryItem, candidate: MemoryItem, similarity: float) -> float:
         importance_signal = min(existing.importance, candidate.importance) / 10.0
