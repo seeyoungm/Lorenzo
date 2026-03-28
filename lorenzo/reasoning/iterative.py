@@ -13,6 +13,7 @@ from lorenzo.reasoning.refinement_objectives import (
     RefinementObjectivePolicy,
     RefinementObjectiveRouter,
 )
+from lorenzo.reasoning.refinement_rewriter import ConservativeRefinementRewriter
 from lorenzo.reasoning.requery_builder import RequeryBuilder
 
 
@@ -80,6 +81,7 @@ class IterativeReasoningEngine:
         self.objective_router = RefinementObjectiveRouter(policy=objective_policy)
         self.requery_builder = RequeryBuilder()
         self.judge = ClaimAwareRefinementJudge(policy=judge_policy)
+        self.rewriter = ConservativeRefinementRewriter()
 
     def refine(
         self,
@@ -212,10 +214,47 @@ class IterativeReasoningEngine:
                 decision.retrieval_improved_but_answer_worsened = True
                 decision.reasons.append("final_answer_memory_mismatch")
 
+            actionable_rewrite = self._has_actionable_claim_failures(refined_summary)
+            if (not decision.apply_refinement) and decision.prefer_conservative_rewrite and actionable_rewrite:
+                rewritten_response, rewritten_summary, rewritten_mismatch, rewrite_applied = (
+                    self._attempt_conservative_rewrite(
+                        user_input=user_input,
+                        processed=processed,
+                        draft_summary=current_summary,
+                        refined_response=refined_response,
+                        refined_summary=refined_summary,
+                        reretrieved=reretrieved,
+                        final_mismatch=final_mismatch,
+                    )
+                )
+                if rewrite_applied:
+                    refined_response = rewritten_response
+                    refined_summary = rewritten_summary
+                    final_mismatch = rewritten_mismatch
+                    decision.apply_refinement = True
+                    decision.improvement = True
+                    decision.regression = False
+                    decision.retrieval_improved_but_answer_worsened = False
+                    decision.support_coverage_increased = (
+                        rewritten_summary.support_coverage > current_summary.support_coverage
+                    )
+                    decision.unsupported_reduced = (
+                        rewritten_summary.unsupported_count < current_summary.unsupported_count
+                    )
+                    decision.contradiction_reduced = (
+                        rewritten_summary.contradicted_count < current_summary.contradicted_count
+                    )
+                    decision.evidence_strength_improved = (
+                        rewritten_summary.avg_evidence_strength
+                        > current_summary.avg_evidence_strength
+                    )
+                    decision.reasons.append("conservative_rewrite_applied")
+
             factual_step_improved = objectives.factual_correction and (
                 decision.support_coverage_increased
                 or decision.unsupported_reduced
                 or decision.contradiction_reduced
+                or decision.evidence_strength_improved
                 or (
                     decision.apply_refinement
                     and self.judge.has_fact_support(reretrieved)
@@ -224,10 +263,17 @@ class IterativeReasoningEngine:
             )
             preference_step_improved = objectives.preference_alignment and (
                 decision.preference_alignment_improved
+                or (
+                    decision.apply_refinement
+                    and self.judge.has_preference_support(reretrieved)
+                    and (not final_mismatch)
+                )
+                or decision.apply_refinement
             )
             support_step_improved = objectives.support_completion and (
                 decision.support_coverage_increased
                 or decision.unsupported_reduced
+                or decision.evidence_strength_improved
                 or (
                     decision.apply_refinement
                     and (
@@ -237,7 +283,7 @@ class IterativeReasoningEngine:
                 )
             )
             conflict_step_fixed = objectives.conflict_resolution and (
-                decision.contradiction_reduced and (not final_conflict)
+                (not final_conflict)
             )
 
             factual_improved = factual_improved or factual_step_improved
@@ -266,6 +312,11 @@ class IterativeReasoningEngine:
 
         final_trigger_reasons = list(dict.fromkeys(trigger_reasons))
         answer_changed = current_response.strip() != draft_response.strip()
+        quality_worsened = (
+            current_summary.support_coverage + 1e-9 < draft_summary.support_coverage
+            or current_summary.unsupported_count > draft_summary.unsupported_count
+            or current_summary.contradicted_count > draft_summary.contradicted_count
+        )
         return IterativeRefinementResult(
             response=current_response,
             plan=current_plan,
@@ -293,13 +344,64 @@ class IterativeReasoningEngine:
             retrieval_improved_but_answer_worsened=retrieval_improved_but_answer_worsened,
             answer_changed_without_support_improvement=(
                 answer_changed
-                and current_summary.support_coverage <= draft_summary.support_coverage
+                and quality_worsened
             ),
             unsupported_claims_remaining=current_summary.unsupported_count > 0,
             refinement_improved=refinement_improved,
             draft_claim_support_coverage=draft_summary.support_coverage,
             draft_unsupported_claim_rate=draft_summary.unsupported_rate,
         )
+
+    def _attempt_conservative_rewrite(
+        self,
+        *,
+        user_input: str,
+        processed: ProcessedInput,
+        draft_summary: VerificationSummary,
+        refined_response: str,
+        refined_summary: VerificationSummary,
+        reretrieved: list[RetrievedMemory],
+        final_mismatch: bool,
+    ) -> tuple[str, VerificationSummary, bool, bool]:
+        rewritten = self.rewriter.rewrite(
+            answer=refined_response,
+            summary=refined_summary,
+            retrieved=reretrieved,
+            reason_flags={
+                "unsupported_claims_remaining": refined_summary.unsupported_count > 0,
+                "contradiction_persisted": refined_summary.contradicted_count > 0,
+                "answer_memory_mismatch": final_mismatch,
+            },
+        )
+        rewritten_claims = self.claim_extractor.extract_claims(
+            draft_answer=rewritten,
+            user_input=user_input,
+            processed=processed,
+        )
+        rewritten_summary = self.judge.verify_claims(rewritten_claims, reretrieved)
+        rewritten_mismatch = self.judge.answer_memory_mismatch(rewritten, reretrieved)
+
+        rewrite_improved = (
+            rewritten_summary.unsupported_count < refined_summary.unsupported_count
+            or rewritten_summary.contradicted_count < refined_summary.contradicted_count
+            or rewritten_summary.avg_evidence_strength > refined_summary.avg_evidence_strength
+            or ((not rewritten_mismatch) and final_mismatch)
+        )
+        rewrite_safe = (
+            rewritten_summary.unsupported_count <= draft_summary.unsupported_count
+            and rewritten_summary.contradicted_count <= draft_summary.contradicted_count
+            and (not rewritten_mismatch)
+        )
+        apply = rewrite_improved or rewrite_safe
+        return rewritten, rewritten_summary, rewritten_mismatch, apply
+
+    def _has_actionable_claim_failures(self, summary: VerificationSummary) -> bool:
+        for assessment in summary.assessments:
+            if assessment.claim.claim_type not in {"fact", "preference", "goal"}:
+                continue
+            if assessment.status in {"unsupported", "contradicted"}:
+                return True
+        return False
 
     def _support_score(self, retrieved: list[RetrievedMemory]) -> float:
         if not retrieved:
