@@ -50,6 +50,7 @@ v2 beta:
   - `refinement_regression_rate`
   - `retrieval_improved_but_answer_worsened_rate`
   - failure case JSONL dump (`--failure-dump`)
+- snapshot: `v2 beta` (iterative loop 구조/품질 계측 기준선 확정)
 
 ## 핵심 특징
 
