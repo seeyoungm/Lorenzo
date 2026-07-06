@@ -7,7 +7,7 @@ import json
 import sys
 
 from lorenzo_forge.dataset_builder import build_training_corpus, load_training_corpus
-from lorenzo_forge.meta_model import load_meta_model, recommend, save_meta_model, train_meta_model
+from lorenzo_forge.meta_model import load_meta_model, recommend, save_meta_model, train_scorer_model
 from lorenzo_forge.profile import DataProfile
 
 DEFAULT_CORPUS = "lorenzo_forge/data/meta_training_corpus.jsonl"
@@ -27,7 +27,7 @@ def _cmd_build_corpus(args: argparse.Namespace) -> None:
 
 def _cmd_train_meta(args: argparse.Namespace) -> None:
     records = load_training_corpus(args.corpus)
-    model = train_meta_model(records, epochs=args.epochs, verbose=1 if args.verbose else 0)
+    model = train_scorer_model(records, epochs=args.epochs, verbose=1 if args.verbose else 0)
     save_meta_model(model, args.out)
     print(f"meta-model saved to {args.out}")
 
@@ -47,9 +47,19 @@ def _cmd_recommend(args: argparse.Namespace) -> None:
         class_balance_entropy=args.class_balance,
         noise_level=args.noise,
     )
-    spec, confidences = recommend(model, profile)
+    spec, predicted_acc, ranked = recommend(model, profile, top_k=args.top_k)
     print(spec.describe())
-    print(json.dumps({"architecture": spec.to_dict(), "confidence": confidences}, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "architecture": spec.to_dict(),
+                "predicted_accuracy": round(predicted_acc, 4),
+                "top_k": [{"arch": s.describe(), "predicted_accuracy": round(p, 4)} for s, p in ranked],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -81,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     p_rec.add_argument("--num-samples", type=int, required=True)
     p_rec.add_argument("--class-balance", type=float, default=1.0)
     p_rec.add_argument("--noise", type=float, default=0.2)
+    p_rec.add_argument("--top-k", type=int, default=3)
     p_rec.set_defaults(func=_cmd_recommend)
 
     args = parser.parse_args(argv)

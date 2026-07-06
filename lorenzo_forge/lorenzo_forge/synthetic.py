@@ -62,11 +62,26 @@ def generate_dataset(profile: DataProfile, rng: np.random.Generator):
         X = X.astype("float32")
     else:
         h, w, c = profile.input_shape
-        base_patterns = rng.normal(size=(profile.output_dim, h, w, c)).astype("float32")
+        # Discriminative difficulty: class signal is weak and spatially LOCAL (a
+        # small patch), while the rest of the image is a shared low-frequency
+        # background. This forces the classifier to actually exploit conv/depth
+        # instead of trivially memorizing a per-class global template, so not
+        # every architecture ties at ~1.0 accuracy (the v0.1 label-noise bug).
+        signal_strength = 0.9 - 0.8 * profile.noise_level  # profile.noise_level in [0.05, 0.5]
+        patch = max(2, min(h, w) // 3)
+        base_patterns = rng.normal(size=(profile.output_dim, patch, patch, c)).astype("float32")
+
         weights = _entropy_to_class_weights(profile.class_balance_entropy, profile.output_dim, rng)
         y = rng.choice(profile.output_dim, size=profile.num_samples, p=weights).astype("int64")
-        noise = rng.normal(scale=profile.noise_level, size=(profile.num_samples, h, w, c)).astype("float32")
-        X = base_patterns[y] + noise
+
+        background = rng.normal(scale=0.6, size=(profile.num_samples, h, w, c)).astype("float32")
+        X = background
+        # Stamp the (weak) class patch at a jittered location per sample.
+        for i in range(profile.num_samples):
+            r0 = int(rng.integers(0, h - patch + 1))
+            c0 = int(rng.integers(0, w - patch + 1))
+            X[i, r0:r0 + patch, c0:c0 + patch, :] += signal_strength * base_patterns[y[i]]
+        X += rng.normal(scale=0.3 + profile.noise_level, size=X.shape).astype("float32")
         X = 1.0 / (1.0 + np.exp(-X))  # squash to a [0, 1]-ish range like normalized pixels
 
     X_train, X_val, y_train, y_val = train_test_split(

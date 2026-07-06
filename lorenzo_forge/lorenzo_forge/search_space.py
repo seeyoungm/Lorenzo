@@ -3,8 +3,9 @@ both as search-candidate genome and as the meta-model's prediction target."""
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
-from typing import Optional
+from typing import Iterator, Optional
 
 import numpy as np
 
@@ -16,7 +17,8 @@ DROPOUT_CHOICES = [0.0, 0.2, 0.4]
 OPTIMIZER_CHOICES = ["adam", "sgd"]
 LR_CHOICES = [1e-2, 1e-3, 1e-4]
 
-# Fixed head order/sizes shared by the search space and the meta-model output heads.
+# Fixed head order/sizes. Used as the one-hot layout for architecture encoding
+# and (historically) as the classification meta-model's output heads.
 HEADS = {
     "num_blocks": len(NUM_BLOCKS_CHOICES),
     "units": len(UNITS_CHOICES),
@@ -26,6 +28,9 @@ HEADS = {
     "optimizer": len(OPTIMIZER_CHOICES),
     "lr": len(LR_CHOICES),
 }
+
+# Length of the one-hot architecture feature vector fed to the scorer meta-model.
+ARCH_FEATURE_DIM = sum(HEADS.values())
 
 
 @dataclass(frozen=True)
@@ -69,6 +74,23 @@ class ArchitectureSpec:
             "learning_rate": self.lr,
         }
 
+    def to_feature_vector(self) -> np.ndarray:
+        """One-hot encoding of the architecture, laid out per HEADS order.
+        This is the architecture half of the scorer meta-model's input."""
+        idx = self.label_indices()
+        parts: list[np.ndarray] = []
+        for name, size in HEADS.items():
+            v = np.zeros(size, dtype=np.float32)
+            v[idx[name]] = 1.0
+            parts.append(v)
+        return np.concatenate(parts)
+
+    def complexity_proxy(self) -> int:
+        """Cheap ordering key for tie-breaking: prefer smaller/faster models."""
+        k = self.kernel_size if self.kernel_size is not None else 1
+        conv_cost = k * k if self.task_type == "image" else 1
+        return self.num_blocks * self.units * conv_cost
+
     def to_raw_dict(self) -> dict:
         return {
             "task_type": self.task_type,
@@ -106,6 +128,20 @@ def sample_random_spec(task_type: str, rng: np.random.Generator) -> Architecture
         optimizer=str(rng.choice(OPTIMIZER_CHOICES)),
         lr=float(rng.choice(LR_CHOICES)),
     )
+
+
+def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
+    """Every architecture in the search space for a task type. Small enough to
+    score exhaustively at recommend time (tabular=576, image=1152)."""
+    kernels = KERNEL_CHOICES if task_type == "image" else [None]
+    for nb, u, k, act, do, opt, lr in itertools.product(
+        NUM_BLOCKS_CHOICES, UNITS_CHOICES, kernels, ACTIVATION_CHOICES,
+        DROPOUT_CHOICES, OPTIMIZER_CHOICES, LR_CHOICES,
+    ):
+        yield ArchitectureSpec(
+            task_type=task_type, num_blocks=nb, units=u, kernel_size=k,
+            activation=act, dropout=do, optimizer=opt, lr=lr,
+        )
 
 
 def decode_from_indices(task_type: str, indices: dict[str, int]) -> ArchitectureSpec:

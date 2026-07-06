@@ -8,6 +8,4 @@ lorenzo_forge/data/
 lorenzo_forge/artifacts/
 
 # Scratch driver/log files from ad-hoc training runs
-scratchpad_forge_*.py
-scratchpad_forge_*.log
-scratchpad_forge_*.json
+scratchpad*

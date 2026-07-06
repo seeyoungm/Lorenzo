@@ -16,10 +16,9 @@ def search_best_architecture(
     rng: np.random.Generator,
     num_candidates: int = 8,
     epochs: int = 4,
+    tie_tolerance: float = 0.02,
 ) -> tuple[ArchitectureSpec, float, list[tuple[ArchitectureSpec, float]]]:
     trials: list[tuple[ArchitectureSpec, float]] = []
-    best_spec: ArchitectureSpec | None = None
-    best_score = -1.0
 
     seen: set[ArchitectureSpec] = set()
     attempts = 0
@@ -31,8 +30,14 @@ def search_best_architecture(
         seen.add(spec)
         score = evaluate_spec(spec, profile, data, epochs=epochs)
         trials.append((spec, score))
-        if score > best_score:
-            best_score, best_spec = score, spec
 
-    assert best_spec is not None
+    assert trials
+    top_score = max(score for _, score in trials)
+    # Deterministic tie-break: among candidates within tie_tolerance of the top
+    # score, prefer the simplest one. Without this, when many architectures tie
+    # (common for easy tasks) the recorded winner is arbitrary -> label noise.
+    contenders = [(s, sc) for s, sc in trials if top_score - sc <= tie_tolerance]
+    best_spec, _ = min(contenders, key=lambda pair: (pair[0].complexity_proxy(), pair[0].describe()))
+    best_score = dict((s, sc) for s, sc in trials)[best_spec]
+
     return best_spec, best_score, trials

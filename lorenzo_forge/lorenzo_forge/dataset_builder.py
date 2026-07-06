@@ -1,5 +1,6 @@
 """Builds the meta-model's training corpus: for many random data profiles,
-run an empirical architecture search and record (profile, winning spec) pairs."""
+run an empirical architecture search and record every (candidate, score) trial
+plus the tie-broken winner. The scorer meta-model learns from all trials."""
 
 from __future__ import annotations
 
@@ -26,7 +27,7 @@ def build_training_corpus(
     for i in range(num_profiles):
         profile = sample_random_profile(rng)
         data = generate_dataset(profile, rng)
-        best_spec, best_score, _ = search_best_architecture(
+        best_spec, best_score, trials = search_best_architecture(
             profile, data, rng, num_candidates=candidates_per_profile, epochs=search_epochs
         )
         records.append(
@@ -34,6 +35,7 @@ def build_training_corpus(
                 "profile": profile.to_dict(),
                 "best_spec": best_spec.to_raw_dict(),
                 "score": best_score,
+                "trials": [{"spec": s.to_raw_dict(), "score": sc} for s, sc in trials],
             }
         )
         if verbose:
