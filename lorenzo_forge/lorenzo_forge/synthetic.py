@@ -67,7 +67,9 @@ def generate_dataset(profile: DataProfile, rng: np.random.Generator):
         # background. This forces the classifier to actually exploit conv/depth
         # instead of trivially memorizing a per-class global template, so not
         # every architecture ties at ~1.0 accuracy (the v0.1 label-noise bug).
-        signal_strength = 0.9 - 0.8 * profile.noise_level  # profile.noise_level in [0.05, 0.5]
+        # Signal scale tuned via probe: strong enough that a good conv arch beats
+        # a weak one (ranking signal) yet never saturates at ~1.0 (label noise).
+        signal_strength = 2.4 * (0.9 - 0.8 * profile.noise_level)  # profile.noise_level in [0.05, 0.5]
         patch = max(2, min(h, w) // 3)
         base_patterns = rng.normal(size=(profile.output_dim, patch, patch, c)).astype("float32")
 
