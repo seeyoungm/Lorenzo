@@ -17,28 +17,33 @@ OUTPUT_DIM_RANGE = (2, 6)
 NUM_SAMPLES_RANGE = (400, 1600)
 
 
+def sample_tabular_profile(rng: np.random.Generator) -> DataProfile:
+    return DataProfile(
+        task_type="tabular",
+        input_shape=(int(rng.integers(*TABULAR_FEATURE_RANGE)),),
+        output_dim=int(rng.integers(*OUTPUT_DIM_RANGE)),
+        num_samples=int(rng.integers(*NUM_SAMPLES_RANGE)),
+        class_balance_entropy=float(rng.uniform(0.6, 1.0)),
+        noise_level=float(rng.uniform(0.05, 0.5)),
+    )
+
+
 def sample_random_profile(rng: np.random.Generator) -> DataProfile:
     task_type = str(rng.choice(["tabular", "image"]))
+    if task_type == "tabular":
+        return sample_tabular_profile(rng)
+
     output_dim = int(rng.integers(*OUTPUT_DIM_RANGE))
     num_samples = int(rng.integers(*NUM_SAMPLES_RANGE))
-    noise_level = float(rng.uniform(0.05, 0.5))
-    class_balance_entropy = float(rng.uniform(0.6, 1.0))
-
-    if task_type == "tabular":
-        n_features = int(rng.integers(*TABULAR_FEATURE_RANGE))
-        input_shape = (n_features,)
-    else:
-        side = int(rng.choice(IMAGE_SIDE_CHOICES))
-        channels = int(rng.choice(IMAGE_CHANNEL_CHOICES))
-        input_shape = (side, side, channels)
-
+    side = int(rng.choice(IMAGE_SIDE_CHOICES))
+    channels = int(rng.choice(IMAGE_CHANNEL_CHOICES))
     return DataProfile(
-        task_type=task_type,
-        input_shape=input_shape,
+        task_type="image",
+        input_shape=(side, side, channels),
         output_dim=output_dim,
         num_samples=num_samples,
-        class_balance_entropy=class_balance_entropy,
-        noise_level=noise_level,
+        class_balance_entropy=float(rng.uniform(0.6, 1.0)),
+        noise_level=float(rng.uniform(0.05, 0.5)),
     )
 
 

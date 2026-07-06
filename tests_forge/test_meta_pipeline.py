@@ -16,7 +16,9 @@ def test_enumerate_specs_sizes():
 
 
 def test_corpus_records_include_all_trials():
-    records = build_training_corpus(num_profiles=2, candidates_per_profile=3, search_epochs=1, seed=2, verbose=False)
+    records = build_training_corpus(
+        num_profiles=2, candidates_per_profile=3, search_epochs=1, seed=2, verbose=False, real_images=False
+    )
     for r in records:
         assert len(r["trials"]) >= 1
         for t in r["trials"]:
@@ -25,7 +27,9 @@ def test_corpus_records_include_all_trials():
 
 
 def test_scorer_end_to_end_recommend():
-    records = build_training_corpus(num_profiles=3, candidates_per_profile=3, search_epochs=1, seed=1, verbose=False)
+    records = build_training_corpus(
+        num_profiles=3, candidates_per_profile=3, search_epochs=1, seed=1, verbose=False, real_images=False
+    )
     model = train_scorer_model(records, epochs=3, verbose=0)
 
     profile = DataProfile("tabular", (10,), 3, 500, 1.0, 0.2)
