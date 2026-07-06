@@ -50,7 +50,8 @@ Lorenzo Forge는 규칙 기반 추천기가 아닙니다. 실제로 학습되는
 
 - task type: `tabular` (MLP), `image` (CNN)
 - 탐색 축: 블록 수, 유닛/필터 수, (이미지) 커널 크기, 활성화 함수, dropout, optimizer, learning rate
-- 데이터: 실제 데이터셋 또는 합성 데이터 모두 프로파일화 가능 (`DataProfile.from_arrays`)
+- 코퍼스 데이터: tabular은 합성(`make_classification`), image는 실제 데이터셋(MNIST / Fashion-MNIST)에서 다양하게 샘플링
+- 임의 데이터셋도 프로파일화 가능 (`DataProfile.from_arrays`)
 
 ## 빠른 시작
 
@@ -119,20 +120,43 @@ v0.1이 진단한 두 원인을 모두 수정했습니다.
 
 - **regret** = (그 프로파일에서 실측된 최적 정확도) − (스코어러가 고른 아키텍처의 실측 정확도). 0에 가까울수록 추천이 최적에 근접.
 - **tabular은 거의 완벽하게 랭킹**(Spearman 0.91). 스코어러 추천을 따르면 최적 대비 0.4%p만 손해(랜덤은 35%p), 정확한 최적을 89% 적중.
-- **image는 여전히 약함**(Spearman 0.25). 합성 이미지 태스크에선 아키텍처 선택이 본질적으로 성능을 덜 가르기(편차 0.114) 때문. 그래도 랜덤보다 5배 낫고 더 이상 망가지지 않음.
+- **image는 여전히 약함**(Spearman 0.25). 합성 이미지 태스크에선 아키텍처 선택이 본질적으로 성능을 덜 가르기(편차 0.114) 때문. 그래도 랜덤보다 5배 낫고 더 이상 망가지지 않음. → v0.3에서 해결.
 
-**결론**: v0.1(모든 헤드에서 baseline 이하)의 실패를 뒤집어, 특히 tabular에서 **실사용 가치가 있는 아키텍처 추천기**가 됨. 남은 과제는 이미지 신호 강화(실제 데이터셋 도입, 후보 학습 epoch 상향 등).
+## 실험 기록 — v0.3 (실제 데이터셋 이미지)
+
+v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 **합성 이미지 태스크가 본질적으로 아키텍처를 덜 가른다**는 것이었으므로, 이미지 프로파일을 **실제 데이터셋에서** 생성하도록 바꿨습니다(`real_image.py`).
+
+- 이미지 프로파일을 **MNIST / Fashion-MNIST**에서 샘플링. 클래스 부분집합·샘플 수·해상도(28/20/14)·추가 노이즈를 무작위로 바꿔 프로파일 다양성 확보.
+- 실제 데이터에선 좋은 conv가 나쁜 것을 **0.4~0.7 정확도 차이**로 앞섬(합성은 ~0.09) → 진짜 랭킹 신호.
+- 이미지 후보는 search epoch를 2배(8)로 학습(실제 이미지는 아키텍처가 갈리는 데 더 필요).
+- tabular은 계속 합성(scikit-learn `make_classification`).
+
+**코퍼스 건강도**: 이미지 프로파일 내 점수 편차 **0.114 → 0.613(5배)**. 아키텍처가 실제로 성능을 가름.
+
+**held-out 랭킹 품질**
+
+| 구분 | Spearman | top-1 regret | 랜덤 regret | top-1 적중 | v0.2 → v0.3 |
+|---|---|---|---|---|---|
+| overall (n=20) | **0.834** | 0.046 | 0.240 | 0.60 | 0.55 → 0.83 |
+| tabular (n=12) | 0.877 | 0.009 | 0.171 | 0.58 | 강세 유지 |
+| **image (n=8)** | **0.769** | 0.102 | 0.346 | 0.625 | **0.25 → 0.77** 🚀 |
+
+- **이미지 Spearman 0.25 → 0.77**로 3배 개선, tabular(0.88)에 근접. 이미지에서도 스코어러가 아키텍처를 제대로 줄 세움.
+- 이미지 regret(0.10)이 tabular(0.009)보다 큰 것은 실제 이미지 점수 범위가 0.13~1.00으로 넓어 최적을 조금만 빗나가도 절대 손실이 크기 때문. 랭킹 자체는 랜덤 대비 3.4배 우수.
+
+**결론**: tabular·image **양쪽 모두 실사용 가치가 있는 아키텍처 추천기**가 됨(overall Spearman 0.83). 이미지 신호는 실제 데이터 도입으로 확보. 다음 확장 후보: CIFAR 등 컬러/고난도 데이터, 텍스트(RNN/Transformer) 태스크.
 
 ## 프로젝트 구조
 
 ```
 lorenzo_forge/
   profile.py            # DataProfile: 데이터 특징 벡터 정의
-  search_space.py        # ArchitectureSpec: 탐색 가능한 아키텍처 인코딩/디코딩
-  synthetic.py            # 합성 프로파일/데이터셋 생성 (학습 라벨 확보용)
+  search_space.py        # ArchitectureSpec: 아키텍처 인코딩/열거/디코딩
+  synthetic.py            # 합성 tabular 데이터 + (구) 합성 이미지 생성
+  real_image.py           # 실제 이미지 프로파일 생성 (MNIST / Fashion-MNIST)
   candidate_trainer.py    # 후보 아키텍처를 실제로 빌드/학습/평가
   search.py               # 프로파일별 random search + 동률 tie-break
-  dataset_builder.py       # 탐색을 반복해 (후보 전부의 점수) 코퍼스 생성
+  dataset_builder.py       # tabular(합성)/image(실제) 반반, 후보 전부 점수 기록
   meta_model.py            # 학습되는 스코어러 신경망 + 열거·점수화 추천 함수
   cli.py                   # lorenzo-forge CLI
 tests_forge/               # 빠른 파라미터로 전체 파이프라인 검증
