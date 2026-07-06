@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+
+# Lorenzo Forge generated artifacts (reproducible via CLI, not source)
+lorenzo_forge/data/
+lorenzo_forge/artifacts/

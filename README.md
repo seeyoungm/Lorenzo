@@ -2,6 +2,9 @@
 
 Memory-Centric + Modular Intelligence 구조를 가진 Python AI 프로토타입입니다.
 
+> 관련 프로젝트: [`lorenzo_forge/`](lorenzo_forge/README.md) — 데이터 프로파일을 학습된 메타 신경망에 넣어
+> 신경망 아키텍처를 추천하는 별도 프로토타입 (Lorenzo의 메모리 파이프라인과는 독립적인 서브 프로젝트).
+
 ## v1.2 Status
 
 Key improvements:
