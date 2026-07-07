@@ -190,14 +190,18 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 | 릴리스 | 데이터 | 실측 test | 우승 아키텍처 | 산출물 |
 |---|---|---|---|---|
 | **Lorenzo Image 1.0** | MNIST | **0.969** | 1× Conv2D(128, k5) adam | `releases/image_1_0/` |
-| **Lorenzo Text 1.0** | IMDB 감성 | **0.822** | embed64 → conv1d(128, k3) adam | `releases/text_1_0/` |
+| **Lorenzo Text 1.0** | IMDB 감성(2클래스) | **0.822** | embed64 → conv1d(128, k3) adam | `releases/text_1_0/` |
+| **Lorenzo Tabular 1.0** | 합성(`make_classification`, 4클래스) | **0.878** | 3× Dense(128, tanh) adam | `releases/tabular_1_0/` |
+| **Lorenzo Text 1.0 (Reuters)** | Reuters 토픽(46클래스) | **0.791** | embed64 → conv1d(128, k3) adam | `releases/text_reuters_1_0/` |
 
 **"필터지 오라클 아님"이 반복 입증됨**:
 - Image 1.0: 스코어러 1순위 예측이 실측 최고가 아니었고, top-5 실측 검증으로 진짜 최고(0.969)를 선택.
-- Text 1.0: GRU 후보가 예측 0.926인데 **실측 0.519(찍기 수준)로 붕괴** → 실제 학습이 이를 걸러내 conv1d(실측 0.822)를 선택. 예측만 믿었으면 붕괴 모델을 낼 뻔.
+- Text 1.0(IMDB): GRU 후보가 예측 0.926인데 **실측 0.519(찍기 수준)로 붕괴** → 실제 학습이 이를 걸러내 conv1d(실측 0.822)를 선택. 예측만 믿었으면 붕괴 모델을 낼 뻔.
+- Text 1.0(Reuters): 46클래스 멀티클래스에서도 GRU 두 후보(예측 0.88대)가 conv1d보다 낮게 나와(실측 0.735/0.749) 같은 패턴 재현. conv1d(실측 0.791)가 우승.
+- Tabular 1.0: 스코어러 1순위 예측(2× Dense sgd, 0.940)이 실측(0.766)으로는 최하위권 — 실측 2위였던 3× Dense adam(0.878)이 우승. 예측 랭킹과 실측 랭킹이 자주 어긋난다는 걸 다시 보여줌.
 - Forge의 값어치: 검색공간 전체가 아닌 **5개만 실제 학습**해도 최적 근접 → 탐색 비용 100배+ 절감.
 
-산출물: `model.keras`(가중치) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보). 가중치는 gitignore, 카드는 저장소에 기록.
+산출물: `model.keras`(가중치) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보). 릴리스 가중치(`model.keras`)는 대용량이라 gitignore, 카드는 저장소에 기록. 학습된 스코어러(`artifacts/scorer_model.keras`)와 코퍼스(`data/meta_training_corpus.jsonl`)는 크기가 작아 저장소에 커밋되어 있어, 새로 클론해도 `build-corpus`/`train-meta` 없이 바로 `release`를 이어갈 수 있음.
 
 ## 프로젝트 구조
 

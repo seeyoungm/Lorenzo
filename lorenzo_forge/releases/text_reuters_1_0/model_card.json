@@ -1,0 +1,79 @@
+{
+  "name": "Lorenzo Text 1.0 (Reuters)",
+  "created_at": "2026-07-07T13:36:13Z",
+  "task_type": "text",
+  "data": {
+    "task_type": "text",
+    "input_shape": [
+      200
+    ],
+    "output_dim": 46,
+    "num_samples": 6000,
+    "class_balance_entropy": 0.6246297975035148,
+    "noise_level": 0.1,
+    "vocab_size": 10000,
+    "source": "reuters"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "text",
+      "blocks": [
+        {
+          "type": "conv1d",
+          "units": 128,
+          "kernel_size": 3
+        }
+      ],
+      "dropout": 0.2,
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "embedding_dim": 64
+    },
+    "test_accuracy": 0.7908,
+    "val_accuracy": 0.7883,
+    "num_params": 670638
+  },
+  "candidates": [
+    {
+      "architecture": "[text] embed64 -> 1x conv1d(units=128, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.89,
+      "val_accuracy": 0.7842,
+      "test_accuracy": 0.7725,
+      "num_params": 670638
+    },
+    {
+      "architecture": "[text] embed64 -> 1x gru(units=128) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.8845,
+      "val_accuracy": 0.7525,
+      "test_accuracy": 0.735,
+      "num_params": 720430
+    },
+    {
+      "architecture": "[text] embed64 -> 1x gru(units=128) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.8814,
+      "val_accuracy": 0.7508,
+      "test_accuracy": 0.7492,
+      "num_params": 720430
+    },
+    {
+      "architecture": "[text] embed64 -> 1x conv1d(units=128, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.8686,
+      "val_accuracy": 0.7817,
+      "test_accuracy": 0.7617,
+      "num_params": 687022
+    },
+    {
+      "architecture": "[text] embed64 -> 1x conv1d(units=128, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.8645,
+      "val_accuracy": 0.7883,
+      "test_accuracy": 0.7908,
+      "num_params": 670638
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 20,
+    "tensorflow": "2.21.0",
+    "python": "3.11.15"
+  }
+}
