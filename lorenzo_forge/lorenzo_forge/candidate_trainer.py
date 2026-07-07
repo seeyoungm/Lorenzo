@@ -13,6 +13,9 @@ from lorenzo_forge.search_space import ArchitectureSpec
 
 
 def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
+    if profile.task_type == "text":
+        return _build_text_model(spec, profile)
+
     inputs = layers.Input(shape=profile.input_shape)
     x = inputs
 
@@ -30,6 +33,32 @@ def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
                 x = layers.Dropout(spec.dropout)(x)
         x = layers.Flatten()(x)
         x = layers.Dense(max(spec.units, 32), activation=spec.activation)(x)
+
+    outputs = layers.Dense(profile.output_dim, activation="softmax")(x)
+    model = models.Model(inputs, outputs)
+
+    optimizer = optimizers.Adam(spec.lr) if spec.optimizer == "adam" else optimizers.SGD(spec.lr)
+    model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    return model
+
+
+def _build_text_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
+    seq_len = profile.input_shape[0]
+    inputs = layers.Input(shape=(seq_len,), dtype="int32")
+    x = layers.Embedding(input_dim=profile.vocab_size, output_dim=spec.embedding_dim)(inputs)
+
+    for i in range(spec.num_blocks):
+        last = i == spec.num_blocks - 1
+        if spec.encoder == "lstm":
+            x = layers.LSTM(spec.units, return_sequences=not last)(x)
+        elif spec.encoder == "gru":
+            x = layers.GRU(spec.units, return_sequences=not last)(x)
+        else:  # conv1d
+            x = layers.Conv1D(spec.units, spec.kernel_size, padding="same", activation="relu")(x)
+        if spec.dropout > 0:
+            x = layers.Dropout(spec.dropout)(x)
+    if spec.encoder == "conv1d":
+        x = layers.GlobalMaxPooling1D()(x)
 
     outputs = layers.Dense(profile.output_dim, activation="softmax")(x)
     model = models.Model(inputs, outputs)

@@ -11,7 +11,7 @@ import numpy as np
 from lorenzo_forge.dataset_builder import build_training_corpus, load_training_corpus
 from lorenzo_forge.meta_model import load_meta_model, recommend, save_meta_model, train_scorer_model
 from lorenzo_forge.profile import DataProfile
-from lorenzo_forge.release import BUILTIN_IMAGE_DOMAINS, load_domain, release
+from lorenzo_forge.release import BUILTIN_DOMAINS, load_domain, release
 
 DEFAULT_CORPUS = "lorenzo_forge/data/meta_training_corpus.jsonl"
 DEFAULT_MODEL = "lorenzo_forge/artifacts/meta_model.keras"
@@ -67,14 +67,16 @@ def _cmd_recommend(args: argparse.Namespace) -> None:
 
 def _cmd_release(args: argparse.Namespace) -> None:
     scorer = load_meta_model(args.scorer)
+    vocab_size = 0
     if args.domain:
-        X, y, task_type = load_domain(args.domain, num_samples=args.num_samples, seed=args.seed)
+        X, y, task_type, vocab_size = load_domain(args.domain, num_samples=args.num_samples, seed=args.seed)
         source = args.domain
     else:
         if not args.task:
             raise SystemExit("--task is required when using --data-npz")
         blob = np.load(args.data_npz)
         X, y, task_type = blob["X"], blob["y"], args.task
+        vocab_size = int(blob["vocab_size"]) if "vocab_size" in blob else 0
         source = args.data_npz
 
     card = release(
@@ -88,6 +90,7 @@ def _cmd_release(args: argparse.Namespace) -> None:
         top_k=args.top_k,
         epochs=args.epochs,
         seed=args.seed,
+        vocab_size=vocab_size,
     )
     print(json.dumps(card["winner"], ensure_ascii=False, indent=2))
 
@@ -128,9 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     p_rel.add_argument("--name", required=True, help='release name, e.g. "Lorenzo Image Alpha"')
     p_rel.add_argument("--scorer", default=DEFAULT_MODEL, help="trained scorer meta-model")
     src = p_rel.add_mutually_exclusive_group(required=True)
-    src.add_argument("--domain", choices=list(BUILTIN_IMAGE_DOMAINS), help="built-in image dataset")
+    src.add_argument("--domain", choices=list(BUILTIN_DOMAINS), help="built-in dataset (image: mnist/fashion_mnist, text: imdb/reuters)")
     src.add_argument("--data-npz", help="custom .npz with arrays X and y (use with --task)")
-    p_rel.add_argument("--task", choices=["tabular", "image"], help="task type for --data-npz")
+    p_rel.add_argument("--task", choices=["tabular", "image", "text"], help="task type for --data-npz")
     p_rel.add_argument("--num-samples", type=int, default=8000, help="subsample size for --domain (None-like: use all if larger)")
     p_rel.add_argument("--top-k", type=int, default=5)
     p_rel.add_argument("--epochs", type=int, default=40)

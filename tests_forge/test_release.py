@@ -10,7 +10,8 @@ from lorenzo_forge.synthetic import generate_dataset, sample_tabular_profile
 
 def _tiny_scorer():
     records = build_training_corpus(
-        num_profiles=3, candidates_per_profile=3, search_epochs=1, seed=0, verbose=False, real_images=False
+        num_profiles=3, candidates_per_profile=3, search_epochs=1, seed=0, verbose=False,
+        real_images=False, domains=("tabular",)
     )
     return train_scorer_model(records, epochs=3, verbose=0)
 

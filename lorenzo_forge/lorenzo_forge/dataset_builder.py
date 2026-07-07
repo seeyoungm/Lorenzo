@@ -12,33 +12,39 @@ import numpy as np
 from lorenzo_forge.real_image import sample_real_image_profile
 from lorenzo_forge.search import search_best_architecture
 from lorenzo_forge.synthetic import generate_dataset, sample_random_profile, sample_tabular_profile
+from lorenzo_forge.text_data import sample_text_profile
 
 
 def build_training_corpus(
-    num_profiles: int = 80,
+    num_profiles: int = 90,
     candidates_per_profile: int = 8,
     search_epochs: int = 4,
     seed: int = 0,
     out_path: str | Path | None = None,
     verbose: bool = True,
     real_images: bool = True,
+    domains: tuple[str, ...] = ("tabular", "image", "text"),
     image_search_epochs: int | None = None,
+    text_search_epochs: int | None = None,
 ) -> list[dict]:
-    """Half tabular (synthetic) / half image profiles. With real_images=True,
-    image profiles are drawn from real datasets (MNIST / Fashion-MNIST) where
-    architecture choice actually matters; image candidates train for
-    image_search_epochs (default: 2x search_epochs) since real images need more
-    steps for a good arch to separate from a weak one."""
+    """Corpus over `domains`. tabular is synthetic; image is real
+    (MNIST/Fashion-MNIST); text is real (IMDB/Reuters). Image and text
+    candidates train for more/fewer epochs than tabular since real images need
+    more steps to separate architectures while recurrent text models are slow."""
     rng = np.random.default_rng(seed)
     records: list[dict] = []
     img_epochs = image_search_epochs if image_search_epochs is not None else search_epochs * 2
+    txt_epochs = text_search_epochs if text_search_epochs is not None else search_epochs + 2
 
     for i in range(num_profiles):
-        make_image = bool(rng.integers(0, 2))
-        if make_image and real_images:
+        domain = str(rng.choice(domains))
+        if domain == "text":
+            profile, data = sample_text_profile(rng)
+            epochs = txt_epochs
+        elif domain == "image" and real_images:
             profile, data = sample_real_image_profile(rng)
             epochs = img_epochs
-        elif make_image:
+        elif domain == "image":
             profile = sample_random_profile(rng)
             while profile.task_type != "image":
                 profile = sample_random_profile(rng)

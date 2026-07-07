@@ -30,24 +30,44 @@ from lorenzo_forge.search_space import ArchitectureSpec
 Split = tuple[np.ndarray, np.ndarray]
 
 BUILTIN_IMAGE_DOMAINS = ("mnist", "fashion_mnist")
+BUILTIN_TEXT_DOMAINS = ("imdb", "reuters")
+BUILTIN_DOMAINS = BUILTIN_IMAGE_DOMAINS + BUILTIN_TEXT_DOMAINS
+
+TEXT_VOCAB_SIZE = 10000
+TEXT_SEQ_LEN = 200
 
 
-def load_domain(name: str, num_samples: int | None = None, seed: int = 0) -> tuple[np.ndarray, np.ndarray, str]:
-    """Load a full built-in image domain (all classes) for a release.
-    Returns (X, y, task_type). Optionally subsample for speed."""
-    if name not in BUILTIN_IMAGE_DOMAINS:
-        raise ValueError(f"unknown domain {name!r}; choices: {BUILTIN_IMAGE_DOMAINS}")
-    loader = getattr(tf.keras.datasets, name)
-    (x_train, y_train), (x_test, y_test) = loader.load_data()
-    X = np.concatenate([x_train, x_test]).astype("float32") / 255.0
-    y = np.concatenate([y_train, y_test]).ravel().astype("int64")
-    if X.ndim == 3:
-        X = X[..., None]
+def load_domain(
+    name: str, num_samples: int | None = None, seed: int = 0
+) -> tuple[np.ndarray, np.ndarray, str, int]:
+    """Load a full built-in domain for a release. Returns
+    (X, y, task_type, vocab_size); vocab_size is 0 for images."""
+    if name in BUILTIN_IMAGE_DOMAINS:
+        loader = getattr(tf.keras.datasets, name)
+        (x_train, y_train), (x_test, y_test) = loader.load_data()
+        X = np.concatenate([x_train, x_test]).astype("float32") / 255.0
+        y = np.concatenate([y_train, y_test]).ravel().astype("int64")
+        if X.ndim == 3:
+            X = X[..., None]
+        task_type, vocab = "image", 0
+    elif name in BUILTIN_TEXT_DOMAINS:
+        loader = getattr(tf.keras.datasets, name)
+        (x_train, y_train), (x_test, y_test) = loader.load_data(num_words=TEXT_VOCAB_SIZE)
+        x = np.concatenate([x_train, x_test])
+        y = np.concatenate([y_train, y_test]).astype("int64")
+        X = np.clip(
+            tf.keras.utils.pad_sequences(x, maxlen=TEXT_SEQ_LEN, padding="post", truncating="post"),
+            0, TEXT_VOCAB_SIZE - 1,
+        ).astype("int32")
+        task_type, vocab = "text", TEXT_VOCAB_SIZE
+    else:
+        raise ValueError(f"unknown domain {name!r}; choices: {BUILTIN_DOMAINS}")
+
     if num_samples is not None and num_samples < len(X):
         rng = np.random.default_rng(seed)
         sel = rng.choice(len(X), size=num_samples, replace=False)
         X, y = X[sel], y[sel]
-    return X, y, "image"
+    return X, y, task_type, vocab
 
 
 @dataclass
@@ -110,6 +130,7 @@ def release(
     epochs: int = 40,
     seed: int = 0,
     noise_level: float = 0.1,
+    vocab_size: int = 0,
     verbose: bool = True,
 ) -> dict:
     """Profile the data, train the scorer's top-k architectures fully, pick the
@@ -118,7 +139,7 @@ def release(
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    profile = DataProfile.from_arrays(X, y, task_type=task_type, noise_level=noise_level)
+    profile = DataProfile.from_arrays(X, y, task_type=task_type, noise_level=noise_level, vocab_size=vocab_size)
     train, val, test = make_splits(X, y, seed=seed)
 
     _, _, ranked = recommend(scorer, profile, top_k=top_k)
