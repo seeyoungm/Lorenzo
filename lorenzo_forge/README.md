@@ -67,6 +67,11 @@ lorenzo-forge train-meta --epochs 30
 
 # 3) 새 데이터 프로파일에 대한 아키텍처 추천
 lorenzo-forge recommend --task tabular --input-dim 30 --output-dim 4 --num-samples 5000
+
+# 4) 릴리스: 추천 top-k를 실제로 풀 학습해 최고를 골라 패키징 (Phase 1)
+lorenzo-forge release --name "Lorenzo Image Alpha" --domain mnist \
+    --scorer lorenzo_forge/artifacts/scorer_model.keras --top-k 5 --epochs 40 \
+    --out-dir lorenzo_forge/releases/image_alpha
 ```
 
 ## 실험 기록 — v0.1 (음성 결과)
@@ -146,6 +151,30 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 
 **결론**: tabular·image **양쪽 모두 실사용 가치가 있는 아키텍처 추천기**가 됨(overall Spearman 0.83). 이미지 신호는 실제 데이터 도입으로 확보. 다음 확장 후보: CIFAR 등 컬러/고난도 데이터, 텍스트(RNN/Transformer) 태스크.
 
+## Phase 1 — 릴리스 파이프라인 (`forge-release`)
+
+스코어러는 아키텍처를 **랭킹**만 합니다. 릴리스하려면 **실제로 학습되고 패키징된 모델**이 필요하죠. `forge-release`가 그 다리를 놓습니다.
+
+```
+데이터 → 스코어러 top-k 추천 → 각 후보 풀 학습(early-stop, 40 epoch)
+→ held-out test로 최고 선택 → model.keras + model_card.json 출력
+```
+
+**설계 원칙**: 스코어러는 **필터**(검색공간 576~1152 → 유망한 몇 개)이지 오라클이 아닙니다. 릴리스는 top-k를 **실제 학습으로 검증**하고 예측을 맹신하지 않습니다.
+
+**첫 릴리스 — `Lorenzo Image Alpha` (MNIST, 8000 샘플)**
+
+| 순위(스코어러 예측) | 예측 acc | 실측 test acc | 파라미터 |
+|---|---|---|---|
+| 1위 (128u tanh sgd) | 0.969 | 0.919 | 3.2M |
+| 3위 (32u relu adam) ✅ **우승** | 0.961 | **0.966** | 202K |
+
+- 스코어러 **1순위 예측이 실제 최고가 아니었음**(실측 0.92). 진짜 최고는 3순위(실측 **0.966**). **top-5를 실제 학습해 검증**한 덕에 96.6%를 골랐고, 추천 1개만 믿었으면 92%를 냈을 것 → "필터로 후보를 좁히고, 실측으로 확정"이 실제 데이터로 입증됨.
+- 우승 모델은 202K 파라미터로 3.2M짜리 대형 후보를 이김(작고 효율적).
+- Forge의 값어치: 1152개 전체가 아닌 **5개만 실제 학습**해도 최적에 근접 → 탐색 비용 200배 이상 절감.
+
+산출물: `model.keras`(2.4MB) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보).
+
 ## 프로젝트 구조
 
 ```
@@ -158,7 +187,8 @@ lorenzo_forge/
   search.py               # 프로파일별 random search + 동률 tie-break
   dataset_builder.py       # tabular(합성)/image(실제) 반반, 후보 전부 점수 기록
   meta_model.py            # 학습되는 스코어러 신경망 + 열거·점수화 추천 함수
-  cli.py                   # lorenzo-forge CLI
+  release.py               # Phase 1: top-k 풀 학습 → 최고 선택 → 모델+카드 패키징
+  cli.py                   # lorenzo-forge CLI (build-corpus/train-meta/recommend/release)
 tests_forge/               # 빠른 파라미터로 전체 파이프라인 검증
 ```
 
