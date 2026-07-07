@@ -133,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
     src = p_rel.add_mutually_exclusive_group(required=True)
     src.add_argument("--domain", choices=list(BUILTIN_DOMAINS), help="built-in dataset (image: mnist/fashion_mnist, text: imdb/reuters)")
     src.add_argument("--data-npz", help="custom .npz with arrays X and y (use with --task)")
-    p_rel.add_argument("--task", choices=["tabular", "image", "text"], help="task type for --data-npz")
+    p_rel.add_argument("--task", choices=["tabular", "image", "text", "timeseries"], help="task type for --data-npz")
     p_rel.add_argument("--num-samples", type=int, default=8000, help="subsample size for --domain (None-like: use all if larger)")
     p_rel.add_argument("--top-k", type=int, default=5)
     p_rel.add_argument("--epochs", type=int, default=40)

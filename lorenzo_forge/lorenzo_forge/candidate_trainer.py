@@ -15,6 +15,8 @@ from lorenzo_forge.search_space import ArchitectureSpec
 def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     if profile.task_type == "text":
         return _build_text_model(spec, profile)
+    if profile.task_type == "timeseries":
+        return _build_timeseries_model(spec, profile)
 
     inputs = layers.Input(shape=profile.input_shape)
     x = inputs
@@ -42,11 +44,8 @@ def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     return model
 
 
-def _build_text_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
-    seq_len = profile.input_shape[0]
-    inputs = layers.Input(shape=(seq_len,), dtype="int32")
-    x = layers.Embedding(input_dim=profile.vocab_size, output_dim=spec.embedding_dim)(inputs)
-
+def _apply_encoder_stack(x, spec: ArchitectureSpec):
+    """Shared recurrent/conv1d encoder stack for text and timeseries."""
     for i in range(spec.num_blocks):
         last = i == spec.num_blocks - 1
         if spec.encoder == "lstm":
@@ -59,13 +58,31 @@ def _build_text_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.
             x = layers.Dropout(spec.dropout)(x)
     if spec.encoder == "conv1d":
         x = layers.GlobalMaxPooling1D()(x)
+    return x
 
+
+def _compile_classifier(inputs, x, spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     outputs = layers.Dense(profile.output_dim, activation="softmax")(x)
     model = models.Model(inputs, outputs)
-
     optimizer = optimizers.Adam(spec.lr) if spec.optimizer == "adam" else optimizers.SGD(spec.lr)
     model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     return model
+
+
+def _build_text_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
+    seq_len = profile.input_shape[0]
+    inputs = layers.Input(shape=(seq_len,), dtype="int32")
+    x = layers.Embedding(input_dim=profile.vocab_size, output_dim=spec.embedding_dim)(inputs)
+    x = _apply_encoder_stack(x, spec)
+    return _compile_classifier(inputs, x, spec, profile)
+
+
+def _build_timeseries_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
+    # Real-valued sequence: (timesteps, channels) straight into the encoder,
+    # no token embedding.
+    inputs = layers.Input(shape=profile.input_shape)
+    x = _apply_encoder_stack(inputs, spec)
+    return _compile_classifier(inputs, x, spec, profile)
 
 
 def evaluate_spec(

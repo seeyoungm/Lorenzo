@@ -13,32 +13,38 @@ from lorenzo_forge.real_image import sample_real_image_profile
 from lorenzo_forge.search import search_best_architecture
 from lorenzo_forge.synthetic import generate_dataset, sample_random_profile, sample_tabular_profile
 from lorenzo_forge.text_data import sample_text_profile
+from lorenzo_forge.timeseries_data import sample_timeseries_profile
 
 
 def build_training_corpus(
-    num_profiles: int = 90,
+    num_profiles: int = 120,
     candidates_per_profile: int = 8,
     search_epochs: int = 4,
     seed: int = 0,
     out_path: str | Path | None = None,
     verbose: bool = True,
     real_images: bool = True,
-    domains: tuple[str, ...] = ("tabular", "image", "text"),
+    domains: tuple[str, ...] = ("tabular", "image", "text", "timeseries"),
     image_search_epochs: int | None = None,
     text_search_epochs: int | None = None,
+    timeseries_search_epochs: int | None = None,
 ) -> list[dict]:
     """Corpus over `domains`. tabular is synthetic; image is real
-    (MNIST/Fashion-MNIST); text is real (IMDB/Reuters). Image and text
-    candidates train for more/fewer epochs than tabular since real images need
-    more steps to separate architectures while recurrent text models are slow."""
+    (MNIST/Fashion-MNIST); text is real (IMDB/Reuters); timeseries is synthetic
+    (position-invariant motifs + class frequencies). Per-domain epoch budgets
+    differ since real images need more steps and recurrent text is slow."""
     rng = np.random.default_rng(seed)
     records: list[dict] = []
     img_epochs = image_search_epochs if image_search_epochs is not None else search_epochs * 2
     txt_epochs = text_search_epochs if text_search_epochs is not None else search_epochs + 2
+    ts_epochs = timeseries_search_epochs if timeseries_search_epochs is not None else search_epochs + 1
 
     for i in range(num_profiles):
         domain = str(rng.choice(domains))
-        if domain == "text":
+        if domain == "timeseries":
+            profile, data = sample_timeseries_profile(rng)
+            epochs = ts_epochs
+        elif domain == "text":
             profile, data = sample_text_profile(rng)
             epochs = txt_epochs
         elif domain == "image" and real_images:

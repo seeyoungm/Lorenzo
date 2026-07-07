@@ -32,7 +32,10 @@ Split = tuple[np.ndarray, np.ndarray]
 BUILTIN_IMAGE_DOMAINS = ("mnist", "fashion_mnist")
 BUILTIN_TEXT_DOMAINS = ("imdb", "reuters")
 BUILTIN_TABULAR_DOMAINS = ("tabular_v1",)
-BUILTIN_DOMAINS = BUILTIN_IMAGE_DOMAINS + BUILTIN_TEXT_DOMAINS + BUILTIN_TABULAR_DOMAINS
+BUILTIN_TIMESERIES_DOMAINS = ("timeseries_v1",)
+BUILTIN_DOMAINS = (
+    BUILTIN_IMAGE_DOMAINS + BUILTIN_TEXT_DOMAINS + BUILTIN_TABULAR_DOMAINS + BUILTIN_TIMESERIES_DOMAINS
+)
 
 TEXT_VOCAB_SIZE = 10000
 TEXT_SEQ_LEN = 200
@@ -42,12 +45,17 @@ def load_domain(
     name: str, num_samples: int | None = None, seed: int = 0
 ) -> tuple[np.ndarray, np.ndarray, str, int]:
     """Load a full built-in domain for a release. Returns
-    (X, y, task_type, vocab_size); vocab_size is 0 for images/tabular."""
+    (X, y, task_type, vocab_size); vocab_size is 0 for images/tabular/timeseries."""
     if name in BUILTIN_TABULAR_DOMAINS:
         from lorenzo_forge.datasets import build_tabular_v1
 
         X, y = build_tabular_v1()
         task_type, vocab = "tabular", 0
+    elif name in BUILTIN_TIMESERIES_DOMAINS:
+        from lorenzo_forge.datasets import build_timeseries_v1
+
+        X, y = build_timeseries_v1()
+        task_type, vocab = "timeseries", 0
     elif name in BUILTIN_IMAGE_DOMAINS:
         loader = getattr(tf.keras.datasets, name)
         (x_train, y_train), (x_test, y_test) = loader.load_data()

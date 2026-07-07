@@ -40,3 +40,25 @@ def build_tabular_v1() -> tuple[np.ndarray, np.ndarray]:
         random_state=s["seed"],
     )
     return X.astype("float32"), y.astype("int64")
+
+
+# Frozen spec for the time-series release task.
+TIMESERIES_V1_SPEC = {
+    "n_samples": 6000,
+    "timesteps": 64,
+    "channels": 3,
+    "n_classes": 5,
+    "noise": 0.6,
+    "seed": 20240501,
+}
+
+
+def build_timeseries_v1() -> tuple[np.ndarray, np.ndarray]:
+    """Deterministically build the frozen timeseries_v1 dataset. Returns (X, y)."""
+    from lorenzo_forge.timeseries_data import generate_timeseries
+
+    s = TIMESERIES_V1_SPEC
+    rng = np.random.default_rng(s["seed"])
+    return generate_timeseries(
+        s["n_samples"], s["timesteps"], s["channels"], s["n_classes"], s["noise"], rng
+    )

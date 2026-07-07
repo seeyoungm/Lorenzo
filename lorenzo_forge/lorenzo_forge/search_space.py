@@ -16,9 +16,12 @@ ACTIVATION_CHOICES = ["relu", "tanh"]
 DROPOUT_CHOICES = [0.0, 0.2, 0.4]
 OPTIMIZER_CHOICES = ["adam", "sgd"]
 LR_CHOICES = [1e-2, 1e-3, 1e-4]
-# Text-only axes (like kernel is image-only): fixed at index 0 for other tasks.
+# Sequence axes: encoder is used by text + timeseries; embedding is text-only
+# (timeseries feeds real-valued sequences straight in, no token embedding).
 EMBEDDING_CHOICES = [16, 32, 64]
 ENCODER_CHOICES = ["lstm", "gru", "conv1d"]
+ENCODER_TASKS = ("text", "timeseries")
+EMBEDDING_TASKS = ("text",)
 
 # Fixed head order/sizes. Used as the one-hot layout for architecture encoding
 # and (historically) as the classification meta-model's output heads.
@@ -70,7 +73,7 @@ class ArchitectureSpec:
                 {"type": "conv2d", "filters": self.units, "kernel_size": self.kernel_size, "activation": self.activation}
                 for _ in range(self.num_blocks)
             ]
-        elif self.task_type == "text":
+        elif self.task_type in ("text", "timeseries"):
             blocks = [
                 {"type": self.encoder, "units": self.units,
                  **({"kernel_size": self.kernel_size} if self.encoder == "conv1d" else {})}
@@ -132,11 +135,12 @@ class ArchitectureSpec:
         return cls(**{k: v for k, v in d.items() if k in fields})
 
     def describe(self) -> str:
-        if self.task_type == "text":
+        if self.task_type in ENCODER_TASKS:
             kind = self.encoder if self.encoder else "seq"
             extra = f", kernel={self.kernel_size}" if self.encoder == "conv1d" else ""
+            prefix = f"embed{self.embedding_dim} -> " if self.embedding_dim is not None else ""
             return (
-                f"[text] embed{self.embedding_dim} -> {self.num_blocks}x {kind}(units={self.units}{extra}) "
+                f"[{self.task_type}] {prefix}{self.num_blocks}x {kind}(units={self.units}{extra}) "
                 f"-> dropout={self.dropout} -> optimizer={self.optimizer}(lr={self.lr})"
             )
         kind = "Conv2D" if self.task_type == "image" else "Dense"
@@ -149,8 +153,8 @@ class ArchitectureSpec:
 
 
 def sample_random_spec(task_type: str, rng: np.random.Generator) -> ArchitectureSpec:
-    encoder = str(rng.choice(ENCODER_CHOICES)) if task_type == "text" else None
-    if task_type == "image" or (task_type == "text" and encoder == "conv1d"):
+    encoder = str(rng.choice(ENCODER_CHOICES)) if task_type in ENCODER_TASKS else None
+    if task_type == "image" or (task_type in ENCODER_TASKS and encoder == "conv1d"):
         kernel_size = int(rng.choice(KERNEL_CHOICES))
     else:
         kernel_size = None
@@ -163,23 +167,24 @@ def sample_random_spec(task_type: str, rng: np.random.Generator) -> Architecture
         dropout=float(rng.choice(DROPOUT_CHOICES)),
         optimizer=str(rng.choice(OPTIMIZER_CHOICES)),
         lr=float(rng.choice(LR_CHOICES)),
-        embedding_dim=int(rng.choice(EMBEDDING_CHOICES)) if task_type == "text" else None,
+        embedding_dim=int(rng.choice(EMBEDDING_CHOICES)) if task_type in EMBEDDING_TASKS else None,
         encoder=encoder,
     )
 
 
 def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
     """Every architecture in the search space for a task type. Small enough to
-    score exhaustively at recommend time (tabular=576, image=1152, text=6912)."""
+    score exhaustively at recommend time (tabular=576, image=1152, text=6912,
+    timeseries=2304)."""
     kernels = KERNEL_CHOICES if task_type == "image" else [None]
-    embeddings = EMBEDDING_CHOICES if task_type == "text" else [None]
-    encoders = ENCODER_CHOICES if task_type == "text" else [None]
+    embeddings = EMBEDDING_CHOICES if task_type in EMBEDDING_TASKS else [None]
+    encoders = ENCODER_CHOICES if task_type in ENCODER_TASKS else [None]
     for nb, u, k, act, do, opt, lr, emb, enc in itertools.product(
         NUM_BLOCKS_CHOICES, UNITS_CHOICES, kernels, ACTIVATION_CHOICES,
         DROPOUT_CHOICES, OPTIMIZER_CHOICES, LR_CHOICES, embeddings, encoders,
     ):
-        # For text, kernel_size is only meaningful for conv1d; enumerate it there.
-        if task_type == "text":
+        # For sequence encoders, kernel_size is only meaningful for conv1d.
+        if task_type in ENCODER_TASKS:
             k_vals = KERNEL_CHOICES if enc == "conv1d" else [None]
         else:
             k_vals = [k]
@@ -192,8 +197,8 @@ def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
 
 
 def decode_from_indices(task_type: str, indices: dict[str, int]) -> ArchitectureSpec:
-    encoder = ENCODER_CHOICES[indices["encoder"]] if task_type == "text" else None
-    if task_type == "image" or (task_type == "text" and encoder == "conv1d"):
+    encoder = ENCODER_CHOICES[indices["encoder"]] if task_type in ENCODER_TASKS else None
+    if task_type == "image" or (task_type in ENCODER_TASKS and encoder == "conv1d"):
         kernel_size = KERNEL_CHOICES[indices["kernel"]]
     else:
         kernel_size = None
@@ -206,6 +211,6 @@ def decode_from_indices(task_type: str, indices: dict[str, int]) -> Architecture
         dropout=DROPOUT_CHOICES[indices["dropout"]],
         optimizer=OPTIMIZER_CHOICES[indices["optimizer"]],
         lr=LR_CHOICES[indices["lr"]],
-        embedding_dim=EMBEDDING_CHOICES[indices["embedding"]] if task_type == "text" else None,
+        embedding_dim=EMBEDDING_CHOICES[indices["embedding"]] if task_type in EMBEDDING_TASKS else None,
         encoder=encoder,
     )
