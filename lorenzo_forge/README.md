@@ -187,18 +187,22 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 
 3-도메인 스코어러(v0.4)로 뽑은 실제 릴리스. 각 릴리스는 top-5를 풀 학습해 실측 최고를 선택:
 
+3-도메인 스코어러(v0.4)로 뽑은 실제 릴리스. 각 릴리스는 top-5를 풀 학습해 실측 최고를 선택:
+
 | 릴리스 | 데이터 | 실측 test | 우승 아키텍처 | 산출물 |
 |---|---|---|---|---|
 | **Lorenzo Image 1.0** | MNIST | **0.969** | 1× Conv2D(128, k5) adam | `releases/image_1_0/` |
-| **Lorenzo Text 1.0** | IMDB 감성(2클래스) | **0.822** | embed64 → conv1d(128, k3) adam | `releases/text_1_0/` |
 | **Lorenzo Tabular 1.0** | `tabular_v1`(재현 가능, 4클래스) | **0.892** | 1× Dense(128, tanh) adam | `releases/tabular_1_0/` |
-| **Lorenzo Text 1.0 (Reuters)** | Reuters 토픽(46클래스) | **0.791** | embed64 → conv1d(128, k3) adam | `releases/text_reuters_1_0/` |
+| **Lorenzo Text 1.1** | IMDB 감성(2클래스) | **0.838** | embed16 → conv1d(256, k5) adam | `releases/text_1_1/` |
+| **Lorenzo Text 1.1 (Reuters)** | Reuters 토픽(46클래스) | **0.803** | embed64 → conv1d(128, k3) adam | `releases/text_reuters_1_1/` |
+
+텍스트는 1.0 대비 학습 예산(데이터·epoch)을 늘려 1.1로 갱신: IMDB 0.822 → **0.838**, Reuters 0.791 → **0.803**. 검색공간·스코어러는 그대로라 1.0 재현성은 유지되며, 개선은 실질적이지만 완만함(현 conv1d 계열의 천장 근처).
 
 **"필터지 오라클 아님"이 반복 입증됨**:
 - Image 1.0: 스코어러 1순위 예측이 실측 최고가 아니었고, top-5 실측 검증으로 진짜 최고(0.969)를 선택.
-- Text 1.0(IMDB): GRU 후보가 예측 0.926인데 **실측 0.519(찍기 수준)로 붕괴** → 실제 학습이 이를 걸러내 conv1d(실측 0.822)를 선택. 예측만 믿었으면 붕괴 모델을 낼 뻔.
-- Text 1.0(Reuters): 46클래스 멀티클래스에서도 GRU 두 후보(예측 0.88대)가 conv1d보다 낮게 나와(실측 0.735/0.749) 같은 패턴 재현. conv1d(실측 0.791)가 우승.
-- Tabular 1.0: **재현 가능한 `tabular_v1` 데이터셋**(고정 시드, `datasets.py`)으로 재생성 → top-5 실측 검증으로 1× Dense(128, tanh) adam 우승(실측 0.892, 4.5K params). 예전엔 휘발성 npz라 재현 불가였음.
+- Text 1.0(IMDB): GRU 후보가 예측 0.926인데 **실측 0.519(찍기 수준)로 붕괴** → 실제 학습이 이를 걸러내 conv1d를 선택. 예측만 믿었으면 붕괴 모델을 낼 뻔.
+- Text 1.1(Reuters): 5번째 후보가 실측 0.608로 낮았지만 top-5 검증으로 conv1d(0.803)를 선택 — 같은 안전망 반복.
+- Tabular 1.0: **재현 가능한 `tabular_v1` 데이터셋**(고정 시드, `datasets.py`)으로 재생성 → 1× Dense(128, tanh) adam 우승(실측 0.892, 4.5K params). 예전엔 휘발성 npz라 재현 불가였음.
 - Forge의 값어치: 검색공간 전체가 아닌 **5개만 실제 학습**해도 최적 근접 → 탐색 비용 100배+ 절감.
 
 산출물: `model.keras`(가중치) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보). 릴리스 가중치(`model.keras`)는 대용량이라 gitignore, 카드는 저장소에 기록. 학습된 스코어러(`artifacts/scorer_model.keras`)와 코퍼스(`data/meta_training_corpus.jsonl`)는 크기가 작아 저장소에 커밋되어 있어, 새로 클론해도 `build-corpus`/`train-meta` 없이 바로 `release`를 이어갈 수 있음.
