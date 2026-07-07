@@ -1,6 +1,6 @@
 {
   "name": "Lorenzo Tabular 1.0",
-  "created_at": "2026-07-07T13:32:09Z",
+  "created_at": "2026-07-07T13:46:50Z",
   "task_type": "tabular",
   "data": {
     "task_type": "tabular",
@@ -9,25 +9,15 @@
     ],
     "output_dim": 4,
     "num_samples": 8000,
-    "class_balance_entropy": 0.9654800428568213,
+    "class_balance_entropy": 0.992463159005166,
     "noise_level": 0.1,
     "vocab_size": 0,
-    "source": "/tmp/claude-0/-home-user-Lorenzo/90705d27-fbfb-5325-90e7-6bc7921599df/scratchpad/tabular_release.npz"
+    "source": "tabular_v1"
   },
   "winner": {
     "architecture": {
       "task_type": "tabular",
       "blocks": [
-        {
-          "type": "dense",
-          "units": 128,
-          "activation": "tanh"
-        },
-        {
-          "type": "dense",
-          "units": 128,
-          "activation": "tanh"
-        },
         {
           "type": "dense",
           "units": 128,
@@ -38,44 +28,44 @@
       "optimizer": "adam",
       "learning_rate": 0.01
     },
-    "test_accuracy": 0.8775,
-    "val_accuracy": 0.8813,
-    "num_params": 37508
+    "test_accuracy": 0.8919,
+    "val_accuracy": 0.8875,
+    "num_params": 4484
   },
   "candidates": [
     {
       "architecture": "[tabular] 2x Dense(units=128, act=tanh) -> dropout=0.2 -> optimizer=sgd(lr=0.01)",
-      "predicted_accuracy": 0.9397,
-      "val_accuracy": 0.765,
-      "test_accuracy": 0.7663,
+      "predicted_accuracy": 0.9401,
+      "val_accuracy": 0.7925,
+      "test_accuracy": 0.7725,
       "num_params": 20996
     },
     {
       "architecture": "[tabular] 3x Dense(units=128, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
-      "predicted_accuracy": 0.9338,
-      "val_accuracy": 0.8813,
-      "test_accuracy": 0.8775,
+      "predicted_accuracy": 0.9339,
+      "val_accuracy": 0.8988,
+      "test_accuracy": 0.8806,
       "num_params": 37508
     },
     {
       "architecture": "[tabular] 1x Dense(units=128, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
-      "predicted_accuracy": 0.9333,
-      "val_accuracy": 0.8838,
-      "test_accuracy": 0.8744,
+      "predicted_accuracy": 0.933,
+      "val_accuracy": 0.8875,
+      "test_accuracy": 0.8919,
       "num_params": 4484
     },
     {
       "architecture": "[tabular] 4x Dense(units=128, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
-      "predicted_accuracy": 0.9329,
-      "val_accuracy": 0.8694,
-      "test_accuracy": 0.8475,
+      "predicted_accuracy": 0.9325,
+      "val_accuracy": 0.8737,
+      "test_accuracy": 0.86,
       "num_params": 54020
     },
     {
       "architecture": "[tabular] 2x Dense(units=128, act=relu) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
-      "predicted_accuracy": 0.9315,
-      "val_accuracy": 0.8831,
-      "test_accuracy": 0.8725,
+      "predicted_accuracy": 0.9312,
+      "val_accuracy": 0.9056,
+      "test_accuracy": 0.8863,
       "num_params": 20996
     }
   ],
