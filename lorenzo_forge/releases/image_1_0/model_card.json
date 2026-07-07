@@ -1,0 +1,81 @@
+{
+  "name": "Lorenzo Image 1.0",
+  "created_at": "2026-07-07T12:09:03Z",
+  "task_type": "image",
+  "data": {
+    "task_type": "image",
+    "input_shape": [
+      28,
+      28,
+      1
+    ],
+    "output_dim": 10,
+    "num_samples": 8000,
+    "class_balance_entropy": 0.9992341564079649,
+    "noise_level": 0.1,
+    "vocab_size": 0,
+    "source": "mnist"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "image",
+      "blocks": [
+        {
+          "type": "conv2d",
+          "filters": 128,
+          "kernel_size": 5,
+          "activation": "relu"
+        }
+      ],
+      "dropout": 0.2,
+      "optimizer": "adam",
+      "learning_rate": 0.001
+    },
+    "test_accuracy": 0.9694,
+    "val_accuracy": 0.9725,
+    "num_params": 3216010
+  },
+  "candidates": [
+    {
+      "architecture": "[image] 1x Conv2D(units=128, kernel=5, act=relu) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9848,
+      "val_accuracy": 0.9737,
+      "test_accuracy": 0.9669,
+      "num_params": 3216010
+    },
+    {
+      "architecture": "[image] 1x Conv2D(units=256, kernel=3, act=relu) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.982,
+      "val_accuracy": 0.9706,
+      "test_accuracy": 0.96,
+      "num_params": 12850442
+    },
+    {
+      "architecture": "[image] 1x Conv2D(units=32, kernel=5, act=relu) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9815,
+      "val_accuracy": 0.9625,
+      "test_accuracy": 0.9563,
+      "num_params": 201898
+    },
+    {
+      "architecture": "[image] 1x Conv2D(units=128, kernel=5, act=relu) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9804,
+      "val_accuracy": 0.9725,
+      "test_accuracy": 0.9694,
+      "num_params": 3216010
+    },
+    {
+      "architecture": "[image] 1x Conv2D(units=256, kernel=5, act=relu) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9794,
+      "val_accuracy": 0.9725,
+      "test_accuracy": 0.9581,
+      "num_params": 12854538
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 40,
+    "tensorflow": "2.21.0",
+    "python": "3.11.15"
+  }
+}

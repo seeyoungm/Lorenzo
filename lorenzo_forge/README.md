@@ -59,19 +59,20 @@ Lorenzo Forge는 규칙 기반 추천기가 아닙니다. 실제로 학습되는
 cd lorenzo_forge
 pip install -e ".[dev]"
 
-# 1) 탐색 코퍼스 생성 (프로파일마다 후보 아키텍처를 실제로 학습해서 라벨 생성)
-lorenzo-forge build-corpus --profiles 80 --candidates 8 --search-epochs 4
+# 1) 탐색 코퍼스 생성 (프로파일마다 후보 아키텍처를 실제로 학습해서 라벨 생성; tabular/image/text)
+lorenzo-forge build-corpus --profiles 90 --candidates 6 --search-epochs 4
 
-# 2) 메타 모델 학습
+# 2) 메타 모델(스코어러) 학습
 lorenzo-forge train-meta --epochs 30
 
 # 3) 새 데이터 프로파일에 대한 아키텍처 추천
 lorenzo-forge recommend --task tabular --input-dim 30 --output-dim 4 --num-samples 5000
 
 # 4) 릴리스: 추천 top-k를 실제로 풀 학습해 최고를 골라 패키징 (Phase 1)
-lorenzo-forge release --name "Lorenzo Image Alpha" --domain mnist \
+lorenzo-forge release --name "Lorenzo Image 1.0" --domain mnist \
     --scorer lorenzo_forge/artifacts/scorer_model.keras --top-k 5 --epochs 40 \
-    --out-dir lorenzo_forge/releases/image_alpha
+    --out-dir lorenzo_forge/releases/image_1_0
+# 텍스트 릴리스: --domain imdb (또는 reuters)
 ```
 
 ## 실험 기록 — v0.1 (음성 결과)
@@ -149,7 +150,27 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 - **이미지 Spearman 0.25 → 0.77**로 3배 개선, tabular(0.88)에 근접. 이미지에서도 스코어러가 아키텍처를 제대로 줄 세움.
 - 이미지 regret(0.10)이 tabular(0.009)보다 큰 것은 실제 이미지 점수 범위가 0.13~1.00으로 넓어 최적을 조금만 빗나가도 절대 손실이 크기 때문. 랭킹 자체는 랜덤 대비 3.4배 우수.
 
-**결론**: tabular·image **양쪽 모두 실사용 가치가 있는 아키텍처 추천기**가 됨(overall Spearman 0.83). 이미지 신호는 실제 데이터 도입으로 확보. 다음 확장 후보: CIFAR 등 컬러/고난도 데이터, 텍스트(RNN/Transformer) 태스크.
+**결론**: tabular·image **양쪽 모두 실사용 가치가 있는 아키텍처 추천기**가 됨(overall Spearman 0.83). 이미지 신호는 실제 데이터 도입으로 확보. 다음 확장 후보: 텍스트(시퀀스) 태스크 → v0.4.
+
+## 실험 기록 — v0.4 (텍스트 도메인 추가, 3-도메인)
+
+세 번째 도메인 **텍스트(시퀀스 분류)** 를 추가. 완전히 다른 모델 계열(Embedding → LSTM/GRU/Conv1D → Dense)이라 검색공간에 `embedding_dim`·`encoder` 축, 프로파일에 `vocab_size`·`is_text` 특징을 추가하고 스코어러를 재학습.
+
+- 텍스트 프로파일은 실제 **IMDB(감성)/Reuters(토픽)** 에서 어휘·시퀀스길이·클래스·샘플수를 변주.
+- 프로브 결과 conv1d-adam(≈0.75)이 recurrent/sgd를 확실히 앞서 랭킹 신호 존재. 단 신호는 tabular/image보다 약함(프로파일 내 편차 0.25).
+
+**held-out 랭킹 품질** (90 프로파일, 6 후보, held-out 23)
+
+| 도메인 | Spearman | regret | 랜덤 regret | top-1 적중 |
+|---|---|---|---|---|
+| overall | 0.648 | 0.027 | 0.191 | 0.57 |
+| image | **0.916** | **0.000** | 0.332 | **1.0** |
+| tabular | 0.735 | 0.032 | 0.109 | 0.25 |
+| **text (신규)** | 0.392 | 0.042 | 0.153 | 0.556 |
+
+- **텍스트 도메인이 추가돼 작동함** — Spearman 0.39로 셋 중 가장 약하지만, 추천을 따르면 최적 대비 4%p 손해로 **랜덤 대비 3.7배** 우수, top-1 56% 적중.
+- 텍스트가 약한 이유: recurrent 학습 노이즈 + 프로파일 내 아키텍처 편차가 작음(0.25). 릴리스 단계의 실측 검증이 이를 보완(아래 Text 1.0 참고).
+- image는 이 실행에서 held-out 완벽(Spearman 0.92, regret 0). tabular은 후보 축소(8→6)와 3-도메인 용량 분할로 이전보다 소폭 하락하나 regret은 여전히 작음.
 
 ## Phase 1 — 릴리스 파이프라인 (`forge-release`)
 
@@ -160,20 +181,23 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 → held-out test로 최고 선택 → model.keras + model_card.json 출력
 ```
 
-**설계 원칙**: 스코어러는 **필터**(검색공간 576~1152 → 유망한 몇 개)이지 오라클이 아닙니다. 릴리스는 top-k를 **실제 학습으로 검증**하고 예측을 맹신하지 않습니다.
+**설계 원칙**: 스코어러는 **필터**(검색공간 576~6912 → 유망한 몇 개)이지 오라클이 아닙니다. 릴리스는 top-k를 **실제 학습으로 검증**하고 예측을 맹신하지 않습니다.
 
-**첫 릴리스 — `Lorenzo Image Alpha` (MNIST, 8000 샘플)**
+### 릴리스 라인업 (1.0)
 
-| 순위(스코어러 예측) | 예측 acc | 실측 test acc | 파라미터 |
-|---|---|---|---|
-| 1위 (128u tanh sgd) | 0.969 | 0.919 | 3.2M |
-| 3위 (32u relu adam) ✅ **우승** | 0.961 | **0.966** | 202K |
+3-도메인 스코어러(v0.4)로 뽑은 실제 릴리스. 각 릴리스는 top-5를 풀 학습해 실측 최고를 선택:
 
-- 스코어러 **1순위 예측이 실제 최고가 아니었음**(실측 0.92). 진짜 최고는 3순위(실측 **0.966**). **top-5를 실제 학습해 검증**한 덕에 96.6%를 골랐고, 추천 1개만 믿었으면 92%를 냈을 것 → "필터로 후보를 좁히고, 실측으로 확정"이 실제 데이터로 입증됨.
-- 우승 모델은 202K 파라미터로 3.2M짜리 대형 후보를 이김(작고 효율적).
-- Forge의 값어치: 1152개 전체가 아닌 **5개만 실제 학습**해도 최적에 근접 → 탐색 비용 200배 이상 절감.
+| 릴리스 | 데이터 | 실측 test | 우승 아키텍처 | 산출물 |
+|---|---|---|---|---|
+| **Lorenzo Image 1.0** | MNIST | **0.969** | 1× Conv2D(128, k5) adam | `releases/image_1_0/` |
+| **Lorenzo Text 1.0** | IMDB 감성 | **0.822** | embed64 → conv1d(128, k3) adam | `releases/text_1_0/` |
 
-산출물: `model.keras`(2.4MB) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보).
+**"필터지 오라클 아님"이 반복 입증됨**:
+- Image 1.0: 스코어러 1순위 예측이 실측 최고가 아니었고, top-5 실측 검증으로 진짜 최고(0.969)를 선택.
+- Text 1.0: GRU 후보가 예측 0.926인데 **실측 0.519(찍기 수준)로 붕괴** → 실제 학습이 이를 걸러내 conv1d(실측 0.822)를 선택. 예측만 믿었으면 붕괴 모델을 낼 뻔.
+- Forge의 값어치: 검색공간 전체가 아닌 **5개만 실제 학습**해도 최적 근접 → 탐색 비용 100배+ 절감.
+
+산출물: `model.keras`(가중치) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보). 가중치는 gitignore, 카드는 저장소에 기록.
 
 ## 프로젝트 구조
 
@@ -183,9 +207,10 @@ lorenzo_forge/
   search_space.py        # ArchitectureSpec: 아키텍처 인코딩/열거/디코딩
   synthetic.py            # 합성 tabular 데이터 + (구) 합성 이미지 생성
   real_image.py           # 실제 이미지 프로파일 생성 (MNIST / Fashion-MNIST)
-  candidate_trainer.py    # 후보 아키텍처를 실제로 빌드/학습/평가
+  text_data.py            # 실제 텍스트 프로파일 생성 (IMDB / Reuters)
+  candidate_trainer.py    # 후보 아키텍처를 실제로 빌드/학습/평가 (tabular/image/text)
   search.py               # 프로파일별 random search + 동률 tie-break
-  dataset_builder.py       # tabular(합성)/image(실제) 반반, 후보 전부 점수 기록
+  dataset_builder.py       # tabular(합성)/image·text(실제) 3분할, 후보 전부 점수 기록
   meta_model.py            # 학습되는 스코어러 신경망 + 열거·점수화 추천 함수
   release.py               # Phase 1: top-k 풀 학습 → 최고 선택 → 모델+카드 패키징
   cli.py                   # lorenzo-forge CLI (build-corpus/train-meta/recommend/release)
@@ -194,6 +219,6 @@ tests_forge/               # 빠른 파라미터로 전체 파이프라인 검�
 
 ## 비목표
 
-- 실행 가능한 학습 코드 자동 생성 (구조 명세까지만 출력)
-- weight-sharing supernet, 진화 탐색 등 고급 NAS 기법
-- 시퀀스/텍스트(RNN/Transformer) 태스크 지원
+- 실행 가능한 학습 코드 자동 생성 (구조 명세 + 학습된 가중치까지만 출력)
+- weight-sharing supernet, 진화 탐색 등 고급 NAS 기법 (작은 검색공간엔 과함 — README 상단 근거 참조)
+- Transformer/attention 기반 대형 아키텍처 (현재 텍스트는 RNN/Conv1D 계열)
