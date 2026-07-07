@@ -42,13 +42,14 @@ def build_tabular_v1() -> tuple[np.ndarray, np.ndarray]:
     return X.astype("float32"), y.astype("int64")
 
 
-# Frozen spec for the time-series release task.
+# Frozen spec for the time-series release task. Noise tuned (probe) so a good
+# conv1d lands well below saturation while weak archs fail — a non-trivial task.
 TIMESERIES_V1_SPEC = {
     "n_samples": 6000,
     "timesteps": 64,
     "channels": 3,
     "n_classes": 5,
-    "noise": 0.6,
+    "noise": 1.8,
     "seed": 20240501,
 }
 

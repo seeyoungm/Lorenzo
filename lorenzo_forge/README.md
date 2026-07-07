@@ -48,9 +48,9 @@ Lorenzo Forge는 규칙 기반 추천기가 아닙니다. 실제로 학습되는
 
 ## 지원 범위
 
-- task type: `tabular` (MLP), `image` (CNN)
-- 탐색 축: 블록 수, 유닛/필터 수, (이미지) 커널 크기, 활성화 함수, dropout, optimizer, learning rate
-- 코퍼스 데이터: tabular은 합성(`make_classification`), image는 실제 데이터셋(MNIST / Fashion-MNIST)에서 다양하게 샘플링
+- task type: `tabular`(MLP), `image`(CNN), `text`(Embedding+RNN/Conv1D), `timeseries`(RNN/Conv1D)
+- 탐색 축: 블록 수, 유닛/필터 수, 커널 크기, (텍스트)임베딩 차원, (시퀀스)인코더 종류(lstm/gru/conv1d), 활성화, dropout, optimizer, lr
+- 코퍼스 데이터: tabular·timeseries는 합성, image·text는 실제 데이터셋(MNIST·Fashion / IMDB·Reuters)
 - 임의 데이터셋도 프로파일화 가능 (`DataProfile.from_arrays`)
 
 ## 빠른 시작
@@ -172,6 +172,24 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 - 텍스트가 약한 이유: recurrent 학습 노이즈 + 프로파일 내 아키텍처 편차가 작음(0.25). 릴리스 단계의 실측 검증이 이를 보완(아래 Text 1.0 참고).
 - image는 이 실행에서 held-out 완벽(Spearman 0.92, regret 0). tabular은 후보 축소(8→6)와 3-도메인 용량 분할로 이전보다 소폭 하락하나 regret은 여전히 작음.
 
+## 실험 기록 — v0.5 (시계열 도메인 추가, 4-도메인)
+
+네 번째 도메인 **시계열(time-series 분류)** 추가. 텍스트의 인코더 축(lstm/gru/conv1d)을 재사용하되 **임베딩 없이 실수 시퀀스(timesteps×channels)를 직접** 인코더에 투입. 합성 시계열은 클래스별 **전역 주파수 + 위치 무관 국소 모티프**로 구성 → 시간 모델링이 진짜 필요.
+
+**held-out 랭킹 품질** (120 프로파일, 6 후보, held-out 30)
+
+| 도메인 | Spearman | regret | 랜덤 regret | top-1 적중 |
+|---|---|---|---|---|
+| overall | 0.743 | 0.022 | 0.306 | 0.70 |
+| tabular | 0.872 | 0.010 | 0.229 | **0.909** |
+| image | 0.806 | 0.012 | 0.207 | 0.60 |
+| **timeseries (신규)** | **0.784** | 0.033 | 0.154 | 0.625 |
+| text | 0.402 | 0.040 | 0.061 | 0.50 |
+
+- **시계열이 강하게 안착** — Spearman 0.784로 image(0.81)에 근접, 텍스트(0.40)보다 훨씬 강함. 프로파일 내 아키텍처 점수 편차 **0.664로 4개 도메인 중 최고**(합성 시계열이 진짜 신호를 줌).
+- 시계열에선 conv1d/gru가 프로파일에 따라 번갈아 우세 → 스코어러가 인코더 선택을 실제로 학습.
+- overall Spearman이 v0.4의 0.65 → **0.74**로 오름(새 도메인이 오히려 전체 신호를 강화). 스코어러 입력은 36차원(4개 task flag + `vocab_size` 등)으로 확장, `artifacts/scorer_model.keras`가 4-도메인 버전으로 갱신됨.
+
 ## Phase 1 — 릴리스 파이프라인 (`forge-release`)
 
 스코어러는 아키텍처를 **랭킹**만 합니다. 릴리스하려면 **실제로 학습되고 패키징된 모델**이 필요하죠. `forge-release`가 그 다리를 놓습니다.
@@ -185,9 +203,7 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 
 ### 릴리스 라인업 (1.0)
 
-3-도메인 스코어러(v0.4)로 뽑은 실제 릴리스. 각 릴리스는 top-5를 풀 학습해 실측 최고를 선택:
-
-3-도메인 스코어러(v0.4)로 뽑은 실제 릴리스. 각 릴리스는 top-5를 풀 학습해 실측 최고를 선택:
+각 릴리스는 스코어러 top-5를 풀 학습해 실측 최고를 선택. Image/Tabular/Text는 3-도메인 스코어러(v0.4)로, TimeSeries는 4-도메인 스코어러(v0.5)로 뽑음:
 
 | 릴리스 | 데이터 | 실측 test | 우승 아키텍처 | 산출물 |
 |---|---|---|---|---|
@@ -195,6 +211,7 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 | **Lorenzo Tabular 1.0** | `tabular_v1`(재현 가능, 4클래스) | **0.892** | 1× Dense(128, tanh) adam | `releases/tabular_1_0/` |
 | **Lorenzo Text 1.1** | IMDB 감성(2클래스) | **0.838** | embed16 → conv1d(256, k5) adam | `releases/text_1_1/` |
 | **Lorenzo Text 1.1 (Reuters)** | Reuters 토픽(46클래스) | **0.803** | embed64 → conv1d(128, k3) adam | `releases/text_reuters_1_1/` |
+| **Lorenzo TimeSeries 1.0** | `timeseries_v1`(재현 가능, 5클래스) | **0.838** | 2× Conv1D(128, k5) adam | `releases/timeseries_1_0/` |
 
 텍스트는 1.0 대비 학습 예산(데이터·epoch)을 늘려 1.1로 갱신: IMDB 0.822 → **0.838**, Reuters 0.791 → **0.803**. 검색공간·스코어러는 그대로라 1.0 재현성은 유지되며, 개선은 실질적이지만 완만함(현 conv1d 계열의 천장 근처).
 
@@ -203,6 +220,7 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 - Text 1.0(IMDB): GRU 후보가 예측 0.926인데 **실측 0.519(찍기 수준)로 붕괴** → 실제 학습이 이를 걸러내 conv1d를 선택. 예측만 믿었으면 붕괴 모델을 낼 뻔.
 - Text 1.1(Reuters): 5번째 후보가 실측 0.608로 낮았지만 top-5 검증으로 conv1d(0.803)를 선택 — 같은 안전망 반복.
 - Tabular 1.0: **재현 가능한 `tabular_v1` 데이터셋**(고정 시드, `datasets.py`)으로 재생성 → 1× Dense(128, tanh) adam 우승(실측 0.892, 4.5K params). 예전엔 휘발성 npz라 재현 불가였음.
+- TimeSeries 1.0: 예측이 5개 후보 모두 ~0.998로 비슷했지만 **실측은 0.588~0.838로 크게 갈림** — 같은 2×conv1d라도 lr=0.01 후보는 0.588로 붕괴. top-5 실측으로 lr=1e-3(0.838)을 선택. `timeseries_v1`(고정 시드) 재현 가능.
 - Forge의 값어치: 검색공간 전체가 아닌 **5개만 실제 학습**해도 최적 근접 → 탐색 비용 100배+ 절감.
 
 산출물: `model.keras`(가중치) + `model_card.json`(데이터 프로파일 · 후보 전부의 예측/val/test · 우승 명세 · 재현정보). 릴리스 가중치(`model.keras`)는 대용량이라 gitignore, 카드는 저장소에 기록. 학습된 스코어러(`artifacts/scorer_model.keras`)와 코퍼스(`data/meta_training_corpus.jsonl`)는 크기가 작아 저장소에 커밋되어 있어, 새로 클론해도 `build-corpus`/`train-meta` 없이 바로 `release`를 이어갈 수 있음.
@@ -216,7 +234,8 @@ lorenzo_forge/
   synthetic.py            # 합성 tabular 데이터 + (구) 합성 이미지 생성
   real_image.py           # 실제 이미지 프로파일 생성 (MNIST / Fashion-MNIST)
   text_data.py            # 실제 텍스트 프로파일 생성 (IMDB / Reuters)
-  datasets.py             # 재현 가능한 릴리스용 고정 데이터셋 (tabular_v1)
+  timeseries_data.py      # 합성 시계열 프로파일 생성 (주파수 + 국소 모티프)
+  datasets.py             # 재현 가능한 릴리스용 고정 데이터셋 (tabular_v1 / timeseries_v1)
   candidate_trainer.py    # 후보 아키텍처를 실제로 빌드/학습/평가 (tabular/image/text)
   search.py               # 프로파일별 random search + 동률 tie-break
   dataset_builder.py       # tabular(합성)/image·text(실제) 3분할, 후보 전부 점수 기록

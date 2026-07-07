@@ -1,0 +1,84 @@
+{
+  "name": "Lorenzo TimeSeries 1.0",
+  "created_at": "2026-07-07T18:35:26Z",
+  "task_type": "timeseries",
+  "data": {
+    "task_type": "timeseries",
+    "input_shape": [
+      64,
+      3
+    ],
+    "output_dim": 5,
+    "num_samples": 6000,
+    "class_balance_entropy": 0.9997376634771697,
+    "noise_level": 0.1,
+    "vocab_size": 0,
+    "source": "timeseries_v1"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "timeseries",
+      "blocks": [
+        {
+          "type": "conv1d",
+          "units": 128,
+          "kernel_size": 5
+        },
+        {
+          "type": "conv1d",
+          "units": 128,
+          "kernel_size": 5
+        }
+      ],
+      "dropout": 0.2,
+      "optimizer": "adam",
+      "learning_rate": 0.001
+    },
+    "test_accuracy": 0.8375,
+    "val_accuracy": 0.8417,
+    "num_params": 84741
+  },
+  "candidates": [
+    {
+      "architecture": "[timeseries] 2x conv1d(units=128, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9984,
+      "val_accuracy": 0.8417,
+      "test_accuracy": 0.8375,
+      "num_params": 84741
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=128, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9979,
+      "val_accuracy": 0.5975,
+      "test_accuracy": 0.5875,
+      "num_params": 84741
+    },
+    {
+      "architecture": "[timeseries] 1x conv1d(units=128, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9975,
+      "val_accuracy": 0.6467,
+      "test_accuracy": 0.6642,
+      "num_params": 2693
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=64, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9974,
+      "val_accuracy": 0.8425,
+      "test_accuracy": 0.8317,
+      "num_params": 21893
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=32, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9974,
+      "val_accuracy": 0.8167,
+      "test_accuracy": 0.815,
+      "num_params": 5829
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 40,
+    "tensorflow": "2.21.0",
+    "python": "3.11.15"
+  }
+}
