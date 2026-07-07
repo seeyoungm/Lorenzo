@@ -3,11 +3,15 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
-# Lorenzo Forge generated artifacts (reproducible via CLI, not source)
-lorenzo_forge/data/
-lorenzo_forge/artifacts/
-# Released model weights are large binaries; model_card.json can be committed with -f
-lorenzo_forge/releases/
+# Lorenzo Forge generated artifacts.
+# The trained scorer + corpus ARE committed (small; needed to continue releases
+# after a fresh clone). Everything else in these dirs stays ignored.
+lorenzo_forge/data/*
+!lorenzo_forge/data/meta_training_corpus.jsonl
+lorenzo_forge/artifacts/*
+!lorenzo_forge/artifacts/scorer_model.keras
+# Released model weights are large binaries; only model_card.json is tracked.
+lorenzo_forge/releases/**/model.keras
 
 # Scratch driver/log files from ad-hoc training runs
 scratchpad*
