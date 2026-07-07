@@ -44,16 +44,23 @@ def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     return model
 
 
+def _recurrent_layer(kind: str, units: int, return_sequences: bool):
+    rnn = layers.LSTM if kind in ("lstm", "bilstm") else layers.GRU
+    layer = rnn(units, return_sequences=return_sequences)
+    if kind in ("bilstm", "bigru"):
+        return layers.Bidirectional(layer)
+    return layer
+
+
 def _apply_encoder_stack(x, spec: ArchitectureSpec):
-    """Shared recurrent/conv1d encoder stack for text and timeseries."""
+    """Shared recurrent/conv1d encoder stack for text and timeseries.
+    Recurrent encoders may be uni- (lstm/gru) or bidirectional (bilstm/bigru)."""
     for i in range(spec.num_blocks):
         last = i == spec.num_blocks - 1
-        if spec.encoder == "lstm":
-            x = layers.LSTM(spec.units, return_sequences=not last)(x)
-        elif spec.encoder == "gru":
-            x = layers.GRU(spec.units, return_sequences=not last)(x)
-        else:  # conv1d
+        if spec.encoder == "conv1d":
             x = layers.Conv1D(spec.units, spec.kernel_size, padding="same", activation="relu")(x)
+        else:
+            x = _recurrent_layer(spec.encoder, spec.units, return_sequences=not last)(x)
         if spec.dropout > 0:
             x = layers.Dropout(spec.dropout)(x)
     if spec.encoder == "conv1d":

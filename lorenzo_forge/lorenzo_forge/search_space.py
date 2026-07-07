@@ -19,7 +19,7 @@ LR_CHOICES = [1e-2, 1e-3, 1e-4]
 # Sequence axes: encoder is used by text + timeseries; embedding is text-only
 # (timeseries feeds real-valued sequences straight in, no token embedding).
 EMBEDDING_CHOICES = [16, 32, 64]
-ENCODER_CHOICES = ["lstm", "gru", "conv1d"]
+ENCODER_CHOICES = ["lstm", "gru", "conv1d", "bilstm", "bigru"]
 ENCODER_TASKS = ("text", "timeseries")
 EMBEDDING_TASKS = ("text",)
 
