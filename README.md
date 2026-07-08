@@ -1,298 +1,58 @@
-# Lorenzo v1
+# Lorenzo
 
-Memory-Centric + Modular Intelligence 구조를 가진 Python AI 프로토타입입니다.
+**Lorenzo는 도메인별로 최적화된 신경망 릴리스 라인입니다.** 각 릴리스는 데이터 도메인(이미지·표형·텍스트·시계열)에 맞춰 아키텍처를 탐색·검증한 뒤, 실제로 학습·패키징한 모델입니다.
 
-> 관련 프로젝트: [`lorenzo_forge/`](lorenzo_forge/README.md) — 데이터 프로파일을 학습된 메타 신경망에 넣어
-> 신경망 아키텍처를 추천하는 별도 프로토타입 (Lorenzo의 메모리 파이프라인과는 독립적인 서브 프로젝트).
+이 릴리스들을 만들어내는 엔진이 **[Lorenzo Forge](lorenzo_forge/README.md)** — 데이터 프로파일을 보고 좋은 신경망 아키텍처를 추천하는 학습된 메타모델(predictor-based NAS)입니다.
 
-## v1.2 Status
+> Lorenzo = 제품(릴리스), Forge = 그 제품을 찍어내는 도구.
 
-Key improvements:
-- strict goal classification (`strong_goal` vs `weak_goal`)
-- commitment precision improved to `1.0`
-- elimination of false goal memories (goal boundary eval 기준)
-- expanded evaluation (`380` scenarios, `270`-turn long sessions)
+## 릴리스 카탈로그
 
-Trade-offs:
-- stricter storage policy로 인해 `retrieval_top1` 하락
+각 릴리스는 Forge 스코어러의 top-5 추천을 **실제로 끝까지 학습**해 실측 최고를 고른 결과입니다. 산출물은 `lorenzo_forge/releases/<name>/`의 `model_card.json`(데이터 프로파일·후보 전부의 예측/실측·우승 명세·재현정보)이며, 가중치(`model.keras`)는 CLI로 재생성됩니다.
 
-Status:
-- memory semantics stabilized
-- next focus: retrieval recall recovery
+| 릴리스 | 도메인 | 데이터 | 실측 test acc | 우승 아키텍처 |
+|---|---|---|---|---|
+| **Lorenzo Image 1.0** | 이미지 | MNIST | **0.969** | 1× Conv2D(128, k5) adam |
+| **Lorenzo Tabular 1.0** | 표형 | `tabular_v1` (재현 가능) | **0.892** | 1× Dense(128, tanh) adam |
+| **Lorenzo TimeSeries 1.0** | 시계열 | `timeseries_v1` (재현 가능) | **0.838** | 2× Conv1D(128, k5) adam |
+| **Lorenzo Text 1.2** | 텍스트 | IMDB 감성(2클래스) | **0.836** | embed64 → bigru(32) adam |
+| **Lorenzo Text 1.2 (Reuters)** | 텍스트 | Reuters 토픽(46클래스) | **0.809** | embed64 → bigru(32) adam |
 
-## v1.3 Update
-
-v1.3 beta:
-- Added conditional weak override for fallback retrieval
-- Diagnosed weak-override blocking causes
-- Improved broad-eval top1 retrieval from 0.562 to 0.594
-- Preserved precision and stale-memory safety
-- No false-positive reintroduction observed
-
-## v2 Beta Update
-
-v2 beta:
-- iterative refinement를 heuristic 집합에서 `claim-aware verification loop` 구조로 승격
-- `iterative.py` 책임 축소 (루프 제어 중심)
-- 신규 모듈 분리:
-  - `claim_extractor.py`
-  - `refinement_objectives.py`
-  - `requery_builder.py`
-  - `refinement_judge.py`
-- pass-2 동작을 단순 재검색이 아닌 claim 검증 기반으로 전환
-- refinement accept/reject 규칙 강화:
-  - support coverage 증가
-  - contradiction 감소
-  - unsupported claim 감소
-  - preference alignment 개선
-  - `retrieval improved but answer worsened` 안전 reject
-- eval/telemetry 확장:
-  - `claim_support_coverage`
-  - `unsupported_claim_rate`
-  - `contradiction_reduction_rate`
-  - `refinement_regression_rate`
-  - `retrieval_improved_but_answer_worsened_rate`
-  - failure case JSONL dump (`--failure-dump`)
-- snapshot: `v2 beta` (iterative loop 구조/품질 계측 기준선 확정)
-## v2-alpha Update
-
-Iterative Reasoning Engine (2-pass) 추가:
-- pass 1: 초기 retrieval + draft answer
-- pass 2: `original query + draft answer` 기반 re-retrieval + refinement
-- refinement trigger:
-  - low confidence
-  - conflicting memory
-  - insufficient supporting memory
-  - answer-memory mismatch
-- max iteration cap (`2~3`) 적용
-
-v2-alpha broad eval snapshot:
-- `retrieval_hit_rate_top1_with_fallback=0.898`
-- `fallback_harm_rate=0.000`
-- `false_positive_reintroduced_rate=0.000`
-- `stale_memory_usage_rate=0.000`
-- `conflict_resolution_accuracy=1.000`
-- `refinement_improvement_rate=0.746`
-- `answer_change_rate=0.746`
-- `iteration_gain_score=0.055`
-
-## 핵심 특징
-
-- 모듈형 파이프라인
-  - `Input Processor`
-  - `Memory Module`
-  - `Reasoning Module`
-  - `Language Module`
-  - `Orchestrator`
-- Persistent memory (`JSONL` 기반)
-- 응답 생성 전 메모리 검색 필수 수행
-- 검색 점수: `embedding semantic + recency + importance + lexical fallback`
-- 검색 보강: `score normalization + intent/type alignment + access boost + conflict penalty + diversity penalty + retrieval_reason + embedding cache`
-- 정책 분리: fallback/weak-override threshold + intent별 claim priority + refinement accept threshold를 선언형 policy로 분리
-- iterative reasoning:
-  - objective-routed refinement (`fact gap / preference mismatch / conflict / support completion`)
-  - error-focused re-query (problematic claim + unresolved memory type 기반)
-- 다국어 유사도 지원(한국어/영어 개념 정규화 기반)
-- memory type 구분: `episodic / semantic / working`
-- 저장 정책: `importance threshold(상향) + deduplication + pre-write semantic summary synthesis + type filter`
-- two-tier memory 정책:
-  - `strong memory`: fully trusted memory
-  - `weak memory`: retrieval fallback 힌트 전용 memory (`weak_goal`, `weak_preference`, `weak_fact`)
-- intent 경계 규칙 강화:
-  - `goal`: `strong_goal / weak_goal` 구분(semantic 저장은 strong만)
-    - strong 조건: 미래 지향 + 달성/변환 의도 + 비일시적 지속성
-    - strong 제외: wish / opinion / temporary desire / conversational meta
-  - `preference`: 스타일/행동 선호 (commitment와 분리)
-  - `commitment`: 명시적 약속/미래 실행 선언/스케줄 액션
-- conflict resolution 정책(타입별):
-  - `goal`: latest wins + history 보존
-  - `preference`: latest wins + 이전값 inactive history
-  - `fact`: 자동 overwrite 금지, keep-both + conflict 마킹
-  - `commitment`: 명시적 confirmation 신호 없으면 overwrite 금지
-  - `event`: timestamp 기준 분리 보존
-- 교체 가능한 language backend (`rule_based`, `echo`)
-- CLI 데모 제공
-- baseline 비교 평가 CLI (`lorenzo-eval`)
-- 단위 테스트 포함
-
-## 프로젝트 구조
-
-```
-lorenzo/
-  __init__.py
-  cli.py
-  config.py
-  eval.py
-  interfaces.py
-  input_processor.py
-  models.py
-  orchestrator.py
-  memory/
-    store.py
-    retriever.py
-  reasoning/
-    claim_extractor.py
-    planner.py
-    refinement_judge.py
-    refinement_objectives.py
-    requery_builder.py
-    iterative.py
-  language/
-    adapter.py
-    backends.py
-tests/
-sample_data/
-  eval_scenarios.json
-  eval_scenarios_broad.json
-  eval_scenarios_goal_refinement.json
-config.example.toml
-```
-
-## 빠른 시작
+## 새 릴리스 만들기
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+cd lorenzo_forge
 pip install -e ".[dev]"
+
+# 내장 재현 가능 도메인으로 릴리스 (스코어러는 저장소에 커밋되어 있음)
+lorenzo-forge release --name "Lorenzo Image 1.0" --domain mnist \
+    --scorer lorenzo_forge/artifacts/scorer_model.keras \
+    --top-k 5 --epochs 40 --out-dir lorenzo_forge/releases/image_1_0
+
+# 도메인: mnist / fashion_mnist / imdb / reuters / tabular_v1 / timeseries_v1
+# 커스텀 데이터: --data-npz X,y.npz --task {tabular,image,text,timeseries}
 ```
 
-### 1) 단발 실행
+엔진의 동작 원리·실험 기록(v0.1 실패 → v0.6)·설계 결정은 **[lorenzo_forge/README.md](lorenzo_forge/README.md)** 참조.
 
-```bash
-lorenzo --config config.example.toml --once "나는 장기 기억이 있는 AI를 만들고 싶어"
+## 설계 원칙
+
+- **Forge는 필터, 릴리스는 실측 검증.** 스코어러는 검색공간(수백~1만 개)을 유망한 5개로 좁혀 탐색 비용을 100배+ 절감하지만, 오라클이 아닙니다. 릴리스는 top-5를 **실제로 학습해** 최고를 확정합니다(예측 상위가 실측 최고가 아닌 사례 다수).
+- **재현성.** 릴리스 데이터는 고정 시드 내장 도메인(`tabular_v1`/`timeseries_v1`) 또는 공개 데이터셋(MNIST·Fashion·IMDB·Reuters). 스코어러·코퍼스도 저장소에 커밋되어 클론만으로 릴리스를 이어갈 수 있습니다.
+
+## 저장소 구조
+
+```
+README.md            # 이 파일 — Lorenzo 릴리스 카탈로그
+lorenzo_forge/       # Forge 엔진 (아키텍처 추천 + 릴리스 파이프라인)
+  lorenzo_forge/     # 파이썬 패키지
+  releases/          # Lorenzo 릴리스 산출물 (model_card.json)
+  artifacts/         # 학습된 스코어러
+  data/              # 메타 학습 코퍼스
+  README.md          # 엔진 상세 문서
+tests_forge/         # 엔진 테스트
 ```
 
-### 2) 대화형 CLI
+## 이전 프로젝트 (memory-centric Lorenzo)
 
-```bash
-lorenzo --config config.example.toml
-```
-
-- 종료: `/exit`
-- 현재 memory item 수: `/count`
-
-## 동작 흐름
-
-1. Input Processor가 입력을 분류
-2. Memory Module이 저장된 기억을 검색 (항상 선행)
-3. Reasoning Planner가 전략 선택
-4. Language Adapter가 응답 생성
-5. Memory update rule로 episodic/semantic/working memory 갱신
-
-## 설정
-
-`config.example.toml`
-
-```toml
-[memory]
-path = "sample_data/memory_store.jsonl"
-top_k = 5
-retrieval_preselect_multiplier = 3
-min_similarity_floor = 0.10
-importance_weight = 0.10
-recency_weight = 0.15
-similarity_weight = 0.75
-lexical_fallback_weight = 0.05
-recency_half_life_hours = 72.0
-min_importance_to_store = 6.5
-dedup_similarity_threshold = 0.97
-semantic_merge_similarity_threshold = 0.60
-merge_confidence_threshold = 0.68
-
-[language]
-backend = "rule_based"
-```
-
-## 테스트
-
-```bash
-pytest -q
-```
-
-## 평가 (Baseline 비교)
-
-```bash
-lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios.json
-lorenzo-eval --config config.example.toml --scenarios sample_data/eval_scenarios_broad.json --failure-dump /tmp/lorenzo_failures.jsonl
-```
-
-평가셋 구성:
-- 기본: `sample_data/eval_scenarios.json`
-- 확장: `sample_data/eval_scenarios_broad.json` (536 시나리오, 100+ turn long session 포함)
-- goal 경계 전용: `sample_data/eval_scenarios_goal_refinement.json` (24 시나리오)
-- paraphrase / cross-language / misleading / conflicting memory / merge-stress / boundary 케이스 포함
-
-출력 지표:
-- `retrieval_hit_rate_top1`
-- `retrieval_hit_rate_top3`
-- `response_consistency`
-- `memory_precision`
-- `memory_recall` (overall + by type: goal/preference/fact)
-- `memory_growth_per_turn`
-- `memory_growth_stability`
-- `retrieval_degradation_over_time`
-- `merge_activation_rate`
-- `false_merge_rate`
-- `merge_false_reject_rate`
-- `merge_candidate_similarity_avg`
-- `merge_rejected_reason`
-- `rejected_count_by_type`
-- `merge_success_count`
-- `merge_rejected_count`
-- `conflict_resolution_count`
-- `conflict_resolution_accuracy`
-- `stale_memory_usage_rate`
-- `recall_by_type` (`goal/fact/preference/commitment/event`)
-- `precision_by_type`
-- `storage_rate_by_type`
-- `conflict_rate_by_type`
-- `retrieval_top1_over_time`
-- `conflict_accumulation_rate`
-- `goal_precision_strong`
-- `goal_recall_strong`
-- `weak_goal_rate`
-- `false_goal_from_wish_rate`
-- `false_goal_from_opinion_rate`
-- `false_goal_from_temporary_desire_rate`
-- `goal_intrusion_rate_in_retrieval_top1`
-- `retrieval_hit_rate_top1_strong_only`
-- `retrieval_hit_rate_top1_with_fallback`
-- `weak_memory_usage_rate`
-- `weak_memory_promotion_rate`
-- `false_positive_reintroduced_rate`
-- `goal_recall_recovery_rate`
-- `claim_support_coverage`
-- `unsupported_claim_rate`
-- `contradiction_reduction_rate`
-- `refinement_regression_rate`
-- `retrieval_improved_but_answer_worsened_rate`
-- `refinement_improvement_rate`
-- `conflict_detected_rate`
-- `answer_change_rate`
-- `iteration_gain_score`
-- `factual_refinement_gain`
-- `preference_alignment_gain`
-- `support_completion_gain`
-- `conflict_fix_rate`
-
-## 구현 우선순위 매핑
-
-- Phase 1
-  - 데이터 모델 정의: `lorenzo/models.py`
-  - memory store/retrieval: `lorenzo/memory/*`
-  - orchestrator 기본 흐름: `lorenzo/orchestrator.py`
-- Phase 2
-  - reasoning planner: `lorenzo/reasoning/planner.py`
-  - language adapter: `lorenzo/language/*`
-  - memory update 규칙: `lorenzo/orchestrator.py::_update_memories`
-- Phase 3
-  - CLI 데모: `lorenzo/cli.py`
-  - 테스트: `tests/*`
-  - 샘플 세션 데이터: `sample_data/memory_store.jsonl`
-
-## 비목표
-
-- 자체 LLM 학습
-- 멀티모달
-- 강화학습
-- 대규모 분산/GPU 최적화
+Lorenzo는 원래 memory-centric AI 프로토타입(v1~v2)이었고, 이후 **"도메인별 신경망을 생성·릴리스하는" 방향으로 피벗**했습니다. 이전 memory-centric 코드는 삭제되지 않았으며 `main` 브랜치와 `memory-centric-final` 태그에 온전히 보존되어 있습니다.
