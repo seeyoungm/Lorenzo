@@ -110,21 +110,28 @@ def full_train(
     val: Split,
     test: Split,
     epochs: int = 40,
-    patience: int = 6,
+    patience: int = 8,
     batch_size: int = 64,
 ) -> tuple[tf.keras.Model, float, float]:
-    """Train an architecture to (early-stopped) convergence; return
-    (model, val_accuracy, test_accuracy)."""
+    """Train an architecture to (early-stopped) convergence with LR scheduling;
+    return (model, val_accuracy, test_accuracy). Unlike the short search-time
+    eval, this trains the release model hard: many epochs, early stopping with
+    best-weight restore, and ReduceLROnPlateau to squeeze out the last accuracy."""
     model = build_model(spec, profile)
-    es = tf.keras.callbacks.EarlyStopping(
-        monitor="val_accuracy", patience=patience, restore_best_weights=True, mode="max"
-    )
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(
+            monitor="val_accuracy", patience=patience, restore_best_weights=True, mode="max"
+        ),
+        tf.keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss", factor=0.5, patience=max(2, patience // 2), min_lr=1e-5
+        ),
+    ]
     model.fit(
         train[0], train[1],
         validation_data=val,
         epochs=epochs,
         batch_size=batch_size,
-        callbacks=[es],
+        callbacks=callbacks,
         verbose=0,
     )
     val_acc = float(model.evaluate(val[0], val[1], verbose=0)[1])
