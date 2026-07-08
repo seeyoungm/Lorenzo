@@ -12,11 +12,13 @@
 
 | 릴리스 | 도메인 | 데이터 | 실측 test acc | 우승 아키텍처 |
 |---|---|---|---|---|
-| **Lorenzo Image 1.0** | 이미지 | MNIST | **0.969** | 1× Conv2D(128, k5) adam |
+| **Lorenzo Image 1.1** | 이미지 | MNIST (전체 7만) | **0.990** | 1× Conv2D(256, k5) adam |
 | **Lorenzo Tabular 1.0** | 표형 | `tabular_v1` (재현 가능) | **0.892** | 1× Dense(128, tanh) adam |
 | **Lorenzo TimeSeries 1.0** | 시계열 | `timeseries_v1` (재현 가능) | **0.838** | 2× Conv1D(128, k5) adam |
 | **Lorenzo Text 1.2** | 텍스트 | IMDB 감성(2클래스) | **0.836** | embed64 → bigru(32) adam |
 | **Lorenzo Text 1.2 (Reuters)** | 텍스트 | Reuters 토픽(46클래스) | **0.809** | embed64 → bigru(32) adam |
+
+> Image 1.1은 1.0(0.969) 대비 **전체 MNIST + LR 스케줄링**으로 재학습해 0.990으로 향상. 스코어러/검색공간은 그대로이며, "릴리스를 더 잘 학습"하는 것만으로 얻은 개선(재빌드 불필요).
 
 ## 새 릴리스 만들기
 
@@ -34,6 +36,18 @@ lorenzo-forge release --name "Lorenzo Image 1.0" --domain mnist \
 ```
 
 엔진의 동작 원리·실험 기록(v0.1 실패 → v0.6)·설계 결정은 **[lorenzo_forge/README.md](lorenzo_forge/README.md)** 참조.
+
+### 로컬 실행 (Apple Silicon / M-시리즈 Mac)
+
+`pyproject.toml`이 플랫폼을 자동 분기하므로 arm64 Mac에서도 `pip install`이 그대로 통합니다. Apple GPU 가속은 `metal` extra로:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+cd lorenzo_forge
+pip install -e ".[dev,metal]"   # arm64: tensorflow + tensorflow-metal (GPU 가속)
+```
+
+CPU-only 클라우드보다 훨씬 빠르며, 이 환경에서 프록시로 막히는 CIFAR 등도 로컬에선 받을 수 있습니다. 커밋된 스코어러/코퍼스 덕에 클론 직후 바로 릴리스를 이어갈 수 있습니다.
 
 ## 설계 원칙
 

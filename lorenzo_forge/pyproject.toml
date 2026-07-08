@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Data profile -> neural architecture recommender, driven by a trained meta-model (lightweight NAS)."
 requires-python = ">=3.10"
 dependencies = [
-    "tensorflow-cpu>=2.16",
+    # Apple Silicon (arm64) uses the standard `tensorflow` wheel; x86 boxes use
+    # the CPU-only build. On Apple Silicon add the `metal` extra for GPU.
+    "tensorflow>=2.16; platform_machine == 'arm64'",
+    "tensorflow-cpu>=2.16; platform_machine != 'arm64'",
     "scikit-learn>=1.3",
     "numpy>=1.24",
 ]
@@ -18,6 +21,8 @@ lorenzo-forge = "lorenzo_forge.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+# Apple GPU acceleration on M-series Macs: `pip install -e ".[metal]"`
+metal = ["tensorflow-metal>=1.1"]
 
 [tool.setuptools.packages.find]
 include = ["lorenzo_forge*"]
