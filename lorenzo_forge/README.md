@@ -190,6 +190,24 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 - 시계열에선 conv1d/gru가 프로파일에 따라 번갈아 우세 → 스코어러가 인코더 선택을 실제로 학습.
 - overall Spearman이 v0.4의 0.65 → **0.74**로 오름(새 도메인이 오히려 전체 신호를 강화). 스코어러 입력은 36차원(4개 task flag + `vocab_size` 등)으로 확장, `artifacts/scorer_model.keras`가 4-도메인 버전으로 갱신됨.
 
+## 실험 기록 — v0.6 (bidirectional 인코더, 텍스트 근본 개선)
+
+텍스트의 가장 약한 랭킹(Spearman 0.40)을 근본 개선. 원인은 recurrent 인코더가 **단방향뿐**이라 conv1d에 밀린 것 → 시퀀스 인코더 축에 **`bilstm`/`bigru`** 추가(이제 5종). 프로브(IMDB 8 epoch): bigru 0.792 / bilstm 0.789 > conv1d 0.777.
+
+**held-out 랭킹 품질** (120 프로파일, 텍스트 8 epoch)
+
+| 도메인 | v0.5 Spearman | v0.6 Spearman |
+|---|---|---|
+| **text** | 0.402 | **0.578** ⬆ |
+| image | 0.806 | 0.892 |
+| timeseries | 0.784 | 0.748 |
+| tabular | 0.872 | 0.780 |
+| overall | 0.743 | 0.745 |
+
+- **텍스트 랭킹 0.40 → 0.58로 실질 개선.** 우승 인코더 분포(텍스트 26개): conv1d 9, **bigru 9 + bilstm 2 + lstm 5** — bidirectional 계열이 conv1d만큼 채택됨. 시계열도 bigru/bilstm이 우세.
+- 비용: bidirectional은 학습이 ~4배 느려 코퍼스 재빌드가 약 4시간(텍스트 병목). 개선은 실질적이나 도메인별 held-out 표본이 작아(텍스트 n=6) 일부 지표는 노이지 — Spearman이 신뢰 지표.
+- 스코어러 입력 38차원, 텍스트 열거 10368 / 시계열 3456 아키텍처.
+
 ## Phase 1 — 릴리스 파이프라인 (`forge-release`)
 
 스코어러는 아키텍처를 **랭킹**만 합니다. 릴리스하려면 **실제로 학습되고 패키징된 모델**이 필요하죠. `forge-release`가 그 다리를 놓습니다.
