@@ -55,4 +55,9 @@ tests_forge/         # 엔진 테스트
 
 ## 이전 프로젝트 (memory-centric Lorenzo)
 
-Lorenzo는 원래 memory-centric AI 프로토타입(v1~v2)이었고, 이후 **"도메인별 신경망을 생성·릴리스하는" 방향으로 피벗**했습니다. 이전 memory-centric 코드는 삭제되지 않았으며 `main` 브랜치와 `memory-centric-final` 태그에 온전히 보존되어 있습니다.
+Lorenzo는 원래 memory-centric AI 프로토타입(v1~v2)이었고, 이후 **"도메인별 신경망을 생성·릴리스하는" 방향으로 피벗**했습니다. 이전 memory-centric 코드는 삭제되지 않고 **git 히스토리에 온전히 보존**되어 있습니다 — 원격 커밋 `a9ac432`(memory-centric 마지막 릴리스, 이전 `main` 상태)에서 복원할 수 있습니다:
+
+```bash
+git checkout a9ac432        # memory-centric Lorenzo (v1-v2) 트리 확인
+git checkout a9ac432 -- lorenzo  # 또는 lorenzo/ 패키지만 꺼내기
+```
