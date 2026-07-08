@@ -1,4 +1,4 @@
-from lorenzo_forge.dataset_builder import build_training_corpus
+from lorenzo_forge.dataset_builder import build_training_corpus, load_training_corpus
 from lorenzo_forge.meta_model import SCORER_INPUT_DIM, build_scorer_model, recommend, train_scorer_model
 from lorenzo_forge.profile import DataProfile
 from lorenzo_forge.search_space import ArchitectureSpec, enumerate_specs
@@ -24,6 +24,30 @@ def test_corpus_records_include_all_trials():
         for t in r["trials"]:
             ArchitectureSpec.from_raw_dict(t["spec"])
             assert 0.0 <= t["score"] <= 1.0
+
+
+def test_incremental_corpus_rebuild_only_touches_target_domain(tmp_path):
+    base_path = tmp_path / "base.jsonl"
+    build_training_corpus(
+        num_profiles=6, candidates_per_profile=3, search_epochs=1, seed=3, verbose=False,
+        real_images=False, domains=("tabular", "timeseries"), out_path=base_path,
+    )
+    base_records = load_training_corpus(base_path)
+    base_tabular = [r for r in base_records if r["profile"]["task_type"] == "tabular"]
+    assert base_tabular  # sanity: the domain we're about to leave untouched exists
+
+    rebuilt = build_training_corpus(
+        num_profiles=4, candidates_per_profile=3, search_epochs=1, seed=4, verbose=False,
+        real_images=False, domains=("timeseries",), base_corpus_path=base_path,
+    )
+
+    rebuilt_tabular = [r for r in rebuilt if r["profile"]["task_type"] == "tabular"]
+    rebuilt_timeseries = [r for r in rebuilt if r["profile"]["task_type"] == "timeseries"]
+    # untouched domain carried over byte-for-byte from the base corpus
+    assert rebuilt_tabular == base_tabular
+    # touched domain was freshly (re)searched at the new profile count
+    assert len(rebuilt_timeseries) == 4
+    assert len(rebuilt) == len(base_tabular) + 4
 
 
 def test_scorer_end_to_end_recommend():

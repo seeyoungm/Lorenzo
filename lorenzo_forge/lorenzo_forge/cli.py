@@ -18,12 +18,18 @@ DEFAULT_MODEL = "lorenzo_forge/artifacts/meta_model.keras"
 
 
 def _cmd_build_corpus(args: argparse.Namespace) -> None:
+    kwargs = {}
+    if args.domains is not None:
+        kwargs["domains"] = tuple(d.strip() for d in args.domains.split(","))
+    if args.base_corpus is not None:
+        kwargs["base_corpus_path"] = args.base_corpus
     build_training_corpus(
         num_profiles=args.profiles,
         candidates_per_profile=args.candidates,
         search_epochs=args.search_epochs,
         seed=args.seed,
         out_path=args.out,
+        **kwargs,
     )
     print(f"corpus written to {args.out}")
 
@@ -105,6 +111,11 @@ def main(argv: list[str] | None = None) -> int:
     p_build.add_argument("--search-epochs", type=int, default=4)
     p_build.add_argument("--seed", type=int, default=0)
     p_build.add_argument("--out", default=DEFAULT_CORPUS)
+    p_build.add_argument("--domains", default=None,
+                          help="comma-separated subset to (re)search, e.g. 'text'; default: all 4 domains")
+    p_build.add_argument("--base-corpus", default=None,
+                          help="existing corpus jsonl to carry over records for domains NOT in --domains "
+                               "(incremental rebuild -- skips re-searching untouched domains)")
     p_build.set_defaults(func=_cmd_build_corpus)
 
     p_train = sub.add_parser("train-meta", help="train the meta-model on a corpus")

@@ -52,7 +52,12 @@ python -m pytest ../tests_forge -q       # 전체 통과해야 정상
 - CIFAR(컬러 이미지) 도메인 추가도 로컬에선 가능.
 
 **엔지니어링 개선 후보**
-- **증분 코퍼스**: 지금은 도메인 하나 바꿔도 120 프로파일 전체 재빌드(느림). 기존 코퍼스 재사용 + 바뀐 도메인만 추가하도록 `dataset_builder`에 기능 추가하면 재빌드가 훨씬 싸짐. (아직 미구현 — 좋은 첫 로컬 작업)
+- **증분 코퍼스 — 구현 완료**: `build_training_corpus(..., base_corpus_path=...)` / CLI `--base-corpus` + `--domains`. `domains`에 지정한 도메인만 새로 서치하고, 나머지 도메인 레코드는 base corpus에서 그대로 이어받는다.
+  ```bash
+  lorenzo-forge build-corpus --profiles 30 --domains text --base-corpus lorenzo_forge/data/meta_training_corpus.jsonl \
+      --out lorenzo_forge/data/meta_training_corpus.jsonl   # text만 재서치, tabular/image/timeseries는 유지
+  ```
+  주의: `--out`을 base와 같은 경로로 지정하면 그 자리에서 갱신됨(먼저 읽고 다 쓴 뒤 저장하므로 안전). 검색공간을 바꾼 경우엔 이 기능 무의미 — 전체 도메인 재빌드 필요(위 "함정" 참고).
 
 ## 코퍼스/스코어러 재빌드 방법 (트랙 2에 필요)
 ```bash

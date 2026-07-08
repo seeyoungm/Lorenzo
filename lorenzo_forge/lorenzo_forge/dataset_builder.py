@@ -28,11 +28,18 @@ def build_training_corpus(
     image_search_epochs: int | None = None,
     text_search_epochs: int | None = None,
     timeseries_search_epochs: int | None = None,
+    base_corpus_path: str | Path | None = None,
 ) -> list[dict]:
     """Corpus over `domains`. tabular is synthetic; image is real
     (MNIST/Fashion-MNIST); text is real (IMDB/Reuters); timeseries is synthetic
     (position-invariant motifs + class frequencies). Per-domain epoch budgets
-    differ since real images need more steps and recurrent text is slow."""
+    differ since real images need more steps and recurrent text is slow.
+
+    If `base_corpus_path` is given, only `domains` gets freshly searched;
+    records for every other domain are carried over unchanged from the base
+    corpus. This lets you refresh one domain (new sampler, more profiles,
+    different epoch budget) without re-running the full multi-domain search,
+    which otherwise dominates rebuild time."""
     rng = np.random.default_rng(seed)
     records: list[dict] = []
     img_epochs = image_search_epochs if image_search_epochs is not None else search_epochs * 2
@@ -74,6 +81,15 @@ def build_training_corpus(
         )
         if verbose:
             print(f"[{i + 1}/{num_profiles}] {profile.task_type} profile -> score={best_score:.3f} :: {best_spec.describe()}")
+
+    if base_corpus_path is not None:
+        base_records = load_training_corpus(base_corpus_path)
+        carried = [r for r in base_records if r["profile"]["task_type"] not in domains]
+        if verbose:
+            dropped = len(base_records) - len(carried)
+            print(f"base corpus: kept {len(carried)} records outside {domains}, "
+                  f"dropped {dropped} stale record(s) for {domains}, added {len(records)} new")
+        records = carried + records
 
     if out_path is not None:
         out_path = Path(out_path)
