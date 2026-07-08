@@ -1,0 +1,133 @@
+{
+  "name": "Lorenzo TimeSeries 1.1",
+  "created_at": "2026-07-08T09:50:05Z",
+  "task_type": "timeseries",
+  "data": {
+    "task_type": "timeseries",
+    "input_shape": [
+      64,
+      3
+    ],
+    "output_dim": 5,
+    "num_samples": 6000,
+    "class_balance_entropy": 0.9997376634771697,
+    "noise_level": 0.1,
+    "vocab_size": 0,
+    "source": "timeseries_v1"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "timeseries",
+      "blocks": [
+        {
+          "type": "conv1d",
+          "units": 256,
+          "kernel_size": 5
+        },
+        {
+          "type": "conv1d",
+          "units": 256,
+          "kernel_size": 5
+        }
+      ],
+      "dropout": 0.2,
+      "optimizer": "adam",
+      "learning_rate": 0.001
+    },
+    "test_accuracy": 0.8667,
+    "val_accuracy": 0.8625,
+    "num_params": 333317
+  },
+  "candidates": [
+    {
+      "architecture": "[timeseries] 1x conv1d(units=64, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9998,
+      "val_accuracy": 0.5542,
+      "test_accuracy": 0.515,
+      "num_params": 965
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=64, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9998,
+      "val_accuracy": 0.6825,
+      "test_accuracy": 0.69,
+      "num_params": 13317
+    },
+    {
+      "architecture": "[timeseries] 1x conv1d(units=256, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9997,
+      "val_accuracy": 0.565,
+      "test_accuracy": 0.5533,
+      "num_params": 3845
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=256, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9997,
+      "val_accuracy": 0.7233,
+      "test_accuracy": 0.7392,
+      "num_params": 200709
+    },
+    {
+      "architecture": "[timeseries] 1x conv1d(units=32, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9997,
+      "val_accuracy": 0.4992,
+      "test_accuracy": 0.5,
+      "num_params": 485
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=32, kernel=3) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9997,
+      "val_accuracy": 0.6567,
+      "test_accuracy": 0.6533,
+      "num_params": 3589
+    },
+    {
+      "architecture": "[timeseries] 1x conv1d(units=64, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9997,
+      "val_accuracy": 0.6508,
+      "test_accuracy": 0.655,
+      "num_params": 1349
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=64, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9997,
+      "val_accuracy": 0.8367,
+      "test_accuracy": 0.8483,
+      "num_params": 21893
+    },
+    {
+      "architecture": "[timeseries] 1x conv1d(units=256, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9996,
+      "val_accuracy": 0.6717,
+      "test_accuracy": 0.6767,
+      "num_params": 5381
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=256, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9996,
+      "val_accuracy": 0.8625,
+      "test_accuracy": 0.8667,
+      "num_params": 333317
+    },
+    {
+      "architecture": "[timeseries] 1x conv1d(units=32, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9996,
+      "val_accuracy": 0.6367,
+      "test_accuracy": 0.6325,
+      "num_params": 677
+    },
+    {
+      "architecture": "[timeseries] 2x conv1d(units=32, kernel=5) -> dropout=0.2 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9996,
+      "val_accuracy": 0.8258,
+      "test_accuracy": 0.8225,
+      "num_params": 5829
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 80,
+    "tensorflow": "2.18.1",
+    "python": "3.12.10"
+  }
+}

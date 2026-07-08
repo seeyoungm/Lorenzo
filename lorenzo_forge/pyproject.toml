@@ -10,7 +10,11 @@ requires-python = ">=3.10"
 dependencies = [
     # Apple Silicon (arm64) uses the standard `tensorflow` wheel; x86 boxes use
     # the CPU-only build. On Apple Silicon add the `metal` extra for GPU.
-    "tensorflow>=2.16; platform_machine == 'arm64'",
+    # Upper bound on arm64 keeps tensorflow paired with the newest tensorflow-metal
+    # (1.2.0, verified against tensorflow 2.18.x) -- newer tensorflow releases can
+    # ship internal symbol changes the metal plugin hasn't caught up to yet, which
+    # breaks `import tensorflow` outright rather than just losing GPU accel.
+    "tensorflow>=2.16,<2.19; platform_machine == 'arm64'",
     "tensorflow-cpu>=2.16; platform_machine != 'arm64'",
     "scikit-learn>=1.3",
     "numpy>=1.24",

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/pytest tests_forge *)",
+      "Bash(pytest tests_forge *)",
+      "Bash(.venv/bin/pip index *)",
+      "Bash(.venv/bin/pip list *)",
+      "Bash(.venv/bin/pip download *)",
+      "Bash(unzip -p *.whl \"*/METADATA\")",
+      "Bash(.venv/bin/python --version)"
+    ]
+  }
+}
