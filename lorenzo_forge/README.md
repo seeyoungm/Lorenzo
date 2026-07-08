@@ -208,6 +208,8 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 - 비용: bidirectional은 학습이 ~4배 느려 코퍼스 재빌드가 약 4시간(텍스트 병목). 개선은 실질적이나 도메인별 held-out 표본이 작아(텍스트 n=6) 일부 지표는 노이지 — Spearman이 신뢰 지표.
 - 스코어러 입력 38차원, 텍스트 열거 10368 / 시계열 3456 아키텍처.
 
+**릴리스 영향(Text 1.2)**: 새 스코어러로 텍스트를 재릴리스하니 **우승이 bigru로 바뀜**(bidirectional 채택됨). 하지만 정확도는 IMDB 0.838→0.836, Reuters 0.803→0.809로 **사실상 평평**. 즉 bidirectional은 **랭킹 품질과 선택 능력은 올렸지만 정확도 천장은 못 올림**(bigru ≈ conv1d). 이 규모에서 정확도를 더 뚫으려면 사전학습 임베딩(GloVe)이나 Transformer가 필요 — 비용 대비 수익이 커 현 범위 밖. **교훈: "근본 개선"이 항상 정확도로 직결되진 않으며, 정직하게 계측해야 안다.**
+
 ## Phase 1 — 릴리스 파이프라인 (`forge-release`)
 
 스코어러는 아키텍처를 **랭킹**만 합니다. 릴리스하려면 **실제로 학습되고 패키징된 모델**이 필요하죠. `forge-release`가 그 다리를 놓습니다.
@@ -221,15 +223,17 @@ v0.2의 남은 과제(이미지 신호 약함)를 해결했습니다. 원인은 
 
 ### 릴리스 라인업 (1.0)
 
-각 릴리스는 스코어러 top-5를 풀 학습해 실측 최고를 선택. Image/Tabular/Text는 3-도메인 스코어러(v0.4)로, TimeSeries는 4-도메인 스코어러(v0.5)로 뽑음:
+각 릴리스는 스코어러 top-5를 풀 학습해 실측 최고를 선택. Image/Tabular는 v0.4 스코어러, TimeSeries는 v0.5, Text 1.2는 v0.6(bidirectional) 스코어러로 뽑음:
 
 | 릴리스 | 데이터 | 실측 test | 우승 아키텍처 | 산출물 |
 |---|---|---|---|---|
 | **Lorenzo Image 1.0** | MNIST | **0.969** | 1× Conv2D(128, k5) adam | `releases/image_1_0/` |
 | **Lorenzo Tabular 1.0** | `tabular_v1`(재현 가능, 4클래스) | **0.892** | 1× Dense(128, tanh) adam | `releases/tabular_1_0/` |
-| **Lorenzo Text 1.1** | IMDB 감성(2클래스) | **0.838** | embed16 → conv1d(256, k5) adam | `releases/text_1_1/` |
-| **Lorenzo Text 1.1 (Reuters)** | Reuters 토픽(46클래스) | **0.803** | embed64 → conv1d(128, k3) adam | `releases/text_reuters_1_1/` |
+| **Lorenzo Text 1.2** | IMDB 감성(2클래스) | **0.836** | embed64 → bigru(32) adam | `releases/text_1_2/` |
+| **Lorenzo Text 1.2 (Reuters)** | Reuters 토픽(46클래스) | **0.809** | embed64 → bigru(32) adam | `releases/text_reuters_1_2/` |
 | **Lorenzo TimeSeries 1.0** | `timeseries_v1`(재현 가능, 5클래스) | **0.838** | 2× Conv1D(128, k5) adam | `releases/timeseries_1_0/` |
+
+Text 1.2는 v0.6 bidirectional 스코어러로 우승이 bigru로 바뀌었으나 정확도는 1.1과 사실상 동일(위 v0.6 기록 참조).
 
 텍스트는 1.0 대비 학습 예산(데이터·epoch)을 늘려 1.1로 갱신: IMDB 0.822 → **0.838**, Reuters 0.791 → **0.803**. 검색공간·스코어러는 그대로라 1.0 재현성은 유지되며, 개선은 실질적이지만 완만함(현 conv1d 계열의 천장 근처).
 

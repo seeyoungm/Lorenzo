@@ -1,0 +1,78 @@
+{
+  "name": "Lorenzo Text 1.2",
+  "created_at": "2026-07-08T02:47:08Z",
+  "task_type": "text",
+  "data": {
+    "task_type": "text",
+    "input_shape": [
+      200
+    ],
+    "output_dim": 2,
+    "num_samples": 16000,
+    "class_balance_entropy": 0.9999998985576172,
+    "noise_level": 0.1,
+    "vocab_size": 10000,
+    "source": "imdb"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "text",
+      "blocks": [
+        {
+          "type": "bigru",
+          "units": 32
+        }
+      ],
+      "dropout": 0.0,
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "embedding_dim": 64
+    },
+    "test_accuracy": 0.8359,
+    "val_accuracy": 0.8462,
+    "num_params": 658946
+  },
+  "candidates": [
+    {
+      "architecture": "[text] embed64 -> 2x conv1d(units=32, kernel=3) -> dropout=0.4 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.9038,
+      "val_accuracy": 0.8197,
+      "test_accuracy": 0.8144,
+      "num_params": 649346
+    },
+    {
+      "architecture": "[text] embed64 -> 4x bigru(units=32) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.8904,
+      "val_accuracy": 0.8306,
+      "test_accuracy": 0.8134,
+      "num_params": 715394
+    },
+    {
+      "architecture": "[text] embed64 -> 3x bigru(units=32) -> dropout=0.0 -> optimizer=adam(lr=0.001)",
+      "predicted_accuracy": 0.8895,
+      "val_accuracy": 0.8288,
+      "test_accuracy": 0.8281,
+      "num_params": 696578
+    },
+    {
+      "architecture": "[text] embed64 -> 1x bigru(units=32) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.889,
+      "val_accuracy": 0.8462,
+      "test_accuracy": 0.8359,
+      "num_params": 658946
+    },
+    {
+      "architecture": "[text] embed64 -> 3x bigru(units=128) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.8866,
+      "val_accuracy": 0.5003,
+      "test_accuracy": 0.5003,
+      "num_params": 1382402
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 30,
+    "tensorflow": "2.21.0",
+    "python": "3.11.15"
+  }
+}
