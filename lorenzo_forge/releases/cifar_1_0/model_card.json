@@ -1,0 +1,122 @@
+{
+  "name": "Lorenzo CIFAR 1.0",
+  "created_at": "2026-07-09T15:19:20Z",
+  "task_type": "image",
+  "data": {
+    "task_type": "image",
+    "input_shape": [
+      32,
+      32,
+      3
+    ],
+    "output_dim": 10,
+    "num_samples": 60000,
+    "class_balance_entropy": 0.9999999999956568,
+    "noise_level": 0.1,
+    "vocab_size": 0,
+    "source": "cifar10"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "image",
+      "blocks": [
+        {
+          "type": "conv2d",
+          "filters": 128,
+          "kernel_size": 5,
+          "activation": "tanh"
+        },
+        {
+          "type": "conv2d",
+          "filters": 128,
+          "kernel_size": 5,
+          "activation": "tanh"
+        },
+        {
+          "type": "conv2d",
+          "filters": 128,
+          "kernel_size": 5,
+          "activation": "tanh"
+        },
+        {
+          "type": "conv2d",
+          "filters": 128,
+          "kernel_size": 5,
+          "activation": "tanh"
+        }
+      ],
+      "dropout": 0.0,
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "block_style": "residual",
+      "pool_style": "standard"
+    },
+    "test_accuracy": 0.7995,
+    "val_accuracy": 0.797,
+    "num_params": 2948746
+  },
+  "candidates": [
+    {
+      "architecture": "[image] 3x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.7632,
+      "val_accuracy": 0.6488,
+      "test_accuracy": 0.6518,
+      "num_params": 1093898
+    },
+    {
+      "architecture": "[image] 4x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.7626,
+      "val_accuracy": 0.7417,
+      "test_accuracy": 0.7339,
+      "num_params": 1307402
+    },
+    {
+      "architecture": "[image] 2x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.7567,
+      "val_accuracy": 0.4882,
+      "test_accuracy": 0.4933,
+      "num_params": 1470218
+    },
+    {
+      "architecture": "[image] 3x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01) [residual]",
+      "predicted_accuracy": 0.7551,
+      "val_accuracy": 0.6874,
+      "test_accuracy": 0.6947,
+      "num_params": 2325130
+    },
+    {
+      "architecture": "[image] 4x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01) [residual]",
+      "predicted_accuracy": 0.7546,
+      "val_accuracy": 0.797,
+      "test_accuracy": 0.7995,
+      "num_params": 2948746
+    },
+    {
+      "architecture": "[image] 3x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.7525,
+      "val_accuracy": 0.6723,
+      "test_accuracy": 0.67,
+      "num_params": 1093898
+    },
+    {
+      "architecture": "[image] 4x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.7519,
+      "val_accuracy": 0.7684,
+      "test_accuracy": 0.7607,
+      "num_params": 1307402
+    },
+    {
+      "architecture": "[image] 1x Conv2D(units=128, kernel=5, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.7516,
+      "val_accuracy": 0.4144,
+      "test_accuracy": 0.423,
+      "num_params": 4205834
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 40,
+    "tensorflow": "2.18.1",
+    "python": "3.12.10"
+  }
+}

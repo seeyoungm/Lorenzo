@@ -29,7 +29,7 @@ from lorenzo_forge.search_space import ArchitectureSpec
 
 Split = tuple[np.ndarray, np.ndarray]
 
-BUILTIN_IMAGE_DOMAINS = ("mnist", "fashion_mnist")
+BUILTIN_IMAGE_DOMAINS = ("mnist", "fashion_mnist", "cifar10")
 BUILTIN_TEXT_DOMAINS = ("imdb", "reuters")
 BUILTIN_TABULAR_DOMAINS = ("tabular_v1",)
 BUILTIN_TIMESERIES_DOMAINS = ("timeseries_v1",)

@@ -19,8 +19,8 @@ from sklearn.model_selection import train_test_split
 
 from lorenzo_forge.profile import DataProfile
 
-SOURCES = ("mnist", "fashion_mnist")
-RESOLUTION_CHOICES = (28, 20, 14)
+SOURCES = ("mnist", "fashion_mnist", "cifar10")
+RESOLUTION_CHOICES = (32, 28, 20, 14)  # 32 = CIFAR-10 native; others MNIST-family sized
 OUTPUT_DIM_RANGE = (2, 7)   # use 2..6 of the 10 available classes
 NUM_SAMPLES_RANGE = (500, 1600)
 

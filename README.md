@@ -17,8 +17,9 @@
 | **Lorenzo TimeSeries 1.2** | 시계열 | `timeseries_v1` (재현 가능) | **0.880** | 1× BiLSTM(256) adam |
 | **Lorenzo Text 1.3** | 텍스트 | IMDB 감성(2클래스) | **0.867** | embed64 → 1× Conv1D(256, k3) adam |
 | **Lorenzo Text 1.3 (Reuters)** | 텍스트 | Reuters 토픽(46클래스) | **0.818** | embed64 → 1× Conv1D(256, k3) adam |
+| **Lorenzo CIFAR 1.0** | 이미지(컬러) | CIFAR-10 (전체 6만) | **0.799** | 4× Conv2D(128, k5, tanh) residual adam |
 
-> Image 1.1은 1.0(0.969) 대비 **전체 MNIST + LR 스케줄링**으로 재학습해 0.990으로 향상. Tabular/TimeSeries/Text는 검색공간에 **BatchNorm + 잔차(residual) 블록 + global-average-pooling** 축을 추가한 스코어러(v0.7)로 재릴리스한 결과이며, Tabular(+0.030)·TimeSeries(+0.013)는 향상됐지만 Image/Text는 이번 검색공간 확장으로 기존 기록을 못 넘어 이전 버전을 유지 중 — 릴리스 파이프라인이 "스코어러 추천을 실측으로 검증"하는 설계 원칙대로 동작한 결과. 자세한 내용은 `HANDOFF.md` 참조.
+> Image 1.1은 1.0(0.969) 대비 **전체 MNIST + LR 스케줄링**으로 재학습해 0.990으로 향상. Tabular/TimeSeries/Text는 검색공간에 **BatchNorm + 잔차(residual) 블록 + global-average-pooling** 축을 추가한 스코어러(v0.7)로 재릴리스한 결과이며, Tabular(+0.030)·TimeSeries(+0.013)는 향상됐지만 Image/Text는 이번 검색공간 확장으로 기존 기록을 못 넘어 이전 버전을 유지 중 — 릴리스 파이프라인이 "스코어러 추천을 실측으로 검증"하는 설계 원칙대로 동작한 결과. **CIFAR 1.0은 신규 도메인**(컬러 이미지) — 원본 배포처가 커넥션당 대역폭을 제한해 병렬 다운로드(`aria2c`)로 우회 후 코퍼스에 포함, 첫 릴리스로 채택. 자세한 내용은 `HANDOFF.md` 참조.
 
 ## 새 릴리스 만들기
 
@@ -47,7 +48,7 @@ cd lorenzo_forge
 pip install -e ".[dev,metal]"   # arm64: tensorflow + tensorflow-metal (GPU 가속)
 ```
 
-CPU-only 클라우드보다 훨씬 빠릅니다(단, 순환 레이어나 소형 모델 다수 학습처럼 GPU 디스패치 오버헤드가 큰 워크로드에선 차이가 크지 않을 수 있음). 커밋된 스코어러/코퍼스 덕에 클론 직후 바로 릴리스를 이어갈 수 있습니다. CIFAR-10처럼 배포처(`cs.toronto.edu`)가 극단적으로 느린 데이터셋은 네트워크 환경에 따라 여전히 막힐 수 있음 — `HANDOFF.md` 참조.
+CPU-only 클라우드보다 훨씬 빠릅니다(단, 순환 레이어나 소형 모델 다수 학습처럼 GPU 디스패치 오버헤드가 큰 워크로드에선 차이가 크지 않을 수 있음). 커밋된 스코어러/코퍼스 덕에 클론 직후 바로 릴리스를 이어갈 수 있습니다. CIFAR-10 배포처(`cs.toronto.edu`)는 단일 연결로는 느리지만(커넥션당 대역폭 제한) `aria2c -x8 -s8` 같은 병렬 다운로드로 우회 가능 — `HANDOFF.md` 참조.
 
 ## 설계 원칙
 
