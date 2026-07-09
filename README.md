@@ -13,12 +13,12 @@
 | 릴리스 | 도메인 | 데이터 | 실측 test acc | 우승 아키텍처 |
 |---|---|---|---|---|
 | **Lorenzo Image 1.1** | 이미지 | MNIST (전체 7만) | **0.990** | 1× Conv2D(256, k5) adam |
-| **Lorenzo Tabular 1.0** | 표형 | `tabular_v1` (재현 가능) | **0.892** | 1× Dense(128, tanh) adam |
-| **Lorenzo TimeSeries 1.0** | 시계열 | `timeseries_v1` (재현 가능) | **0.838** | 2× Conv1D(128, k5) adam |
-| **Lorenzo Text 1.2** | 텍스트 | IMDB 감성(2클래스) | **0.836** | embed64 → bigru(32) adam |
-| **Lorenzo Text 1.2 (Reuters)** | 텍스트 | Reuters 토픽(46클래스) | **0.809** | embed64 → bigru(32) adam |
+| **Lorenzo Tabular 1.1** | 표형 | `tabular_v1` (재현 가능) | **0.922** | 1× Dense(128, tanh) adam |
+| **Lorenzo TimeSeries 1.2** | 시계열 | `timeseries_v1` (재현 가능) | **0.880** | 1× BiLSTM(256) adam |
+| **Lorenzo Text 1.3** | 텍스트 | IMDB 감성(2클래스) | **0.867** | embed64 → 1× Conv1D(256, k3) adam |
+| **Lorenzo Text 1.3 (Reuters)** | 텍스트 | Reuters 토픽(46클래스) | **0.818** | embed64 → 1× Conv1D(256, k3) adam |
 
-> Image 1.1은 1.0(0.969) 대비 **전체 MNIST + LR 스케줄링**으로 재학습해 0.990으로 향상. 스코어러/검색공간은 그대로이며, "릴리스를 더 잘 학습"하는 것만으로 얻은 개선(재빌드 불필요).
+> Image 1.1은 1.0(0.969) 대비 **전체 MNIST + LR 스케줄링**으로 재학습해 0.990으로 향상. Tabular/TimeSeries/Text는 검색공간에 **BatchNorm + 잔차(residual) 블록 + global-average-pooling** 축을 추가한 스코어러(v0.7)로 재릴리스한 결과이며, Tabular(+0.030)·TimeSeries(+0.013)는 향상됐지만 Image/Text는 이번 검색공간 확장으로 기존 기록을 못 넘어 이전 버전을 유지 중 — 릴리스 파이프라인이 "스코어러 추천을 실측으로 검증"하는 설계 원칙대로 동작한 결과. 자세한 내용은 `HANDOFF.md` 참조.
 
 ## 새 릴리스 만들기
 
@@ -47,7 +47,7 @@ cd lorenzo_forge
 pip install -e ".[dev,metal]"   # arm64: tensorflow + tensorflow-metal (GPU 가속)
 ```
 
-CPU-only 클라우드보다 훨씬 빠르며, 이 환경에서 프록시로 막히는 CIFAR 등도 로컬에선 받을 수 있습니다. 커밋된 스코어러/코퍼스 덕에 클론 직후 바로 릴리스를 이어갈 수 있습니다.
+CPU-only 클라우드보다 훨씬 빠릅니다(단, 순환 레이어나 소형 모델 다수 학습처럼 GPU 디스패치 오버헤드가 큰 워크로드에선 차이가 크지 않을 수 있음). 커밋된 스코어러/코퍼스 덕에 클론 직후 바로 릴리스를 이어갈 수 있습니다. CIFAR-10처럼 배포처(`cs.toronto.edu`)가 극단적으로 느린 데이터셋은 네트워크 환경에 따라 여전히 막힐 수 있음 — `HANDOFF.md` 참조.
 
 ## 설계 원칙
 
