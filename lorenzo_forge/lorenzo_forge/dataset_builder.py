@@ -80,7 +80,7 @@ def build_training_corpus(
             }
         )
         if verbose:
-            print(f"[{i + 1}/{num_profiles}] {profile.task_type} profile -> score={best_score:.3f} :: {best_spec.describe()}")
+            print(f"[{i + 1}/{num_profiles}] {profile.task_type} profile -> score={best_score:.3f} :: {best_spec.describe()}", flush=True)
 
     if base_corpus_path is not None:
         base_records = load_training_corpus(base_corpus_path)

@@ -22,6 +22,12 @@ EMBEDDING_CHOICES = [16, 32, 64]
 ENCODER_CHOICES = ["lstm", "gru", "conv1d", "bilstm", "bigru"]
 ENCODER_TASKS = ("text", "timeseries")
 EMBEDDING_TASKS = ("text",)
+# Modernization axes (Track 2): skip connections and pooling style. Meaningful
+# for tabular Dense / image Conv2D / conv1d-encoded text+timeseries; present
+# but ignored elsewhere (same convention as kernel_size being unused for
+# non-conv tasks) so the one-hot layout stays uniform across task types.
+BLOCK_STYLE_CHOICES = ["plain", "residual"]
+POOL_STYLE_CHOICES = ["standard", "gap"]
 
 # Fixed head order/sizes. Used as the one-hot layout for architecture encoding
 # and (historically) as the classification meta-model's output heads.
@@ -35,6 +41,8 @@ HEADS = {
     "lr": len(LR_CHOICES),
     "embedding": len(EMBEDDING_CHOICES),
     "encoder": len(ENCODER_CHOICES),
+    "block_style": len(BLOCK_STYLE_CHOICES),
+    "pool_style": len(POOL_STYLE_CHOICES),
 }
 
 # Length of the one-hot architecture feature vector fed to the scorer meta-model.
@@ -53,6 +61,8 @@ class ArchitectureSpec:
     kernel_size: Optional[int] = None  # image conv kernel, or text conv1d kernel
     embedding_dim: Optional[int] = None  # text only
     encoder: Optional[str] = None  # text only: lstm | gru | conv1d
+    block_style: str = "plain"  # plain | residual
+    pool_style: str = "standard"  # standard (flatten/max) | gap
 
     def label_indices(self) -> dict[str, int]:
         return {
@@ -65,6 +75,8 @@ class ArchitectureSpec:
             "lr": LR_CHOICES.index(self.lr),
             "embedding": EMBEDDING_CHOICES.index(self.embedding_dim) if self.embedding_dim is not None else 0,
             "encoder": ENCODER_CHOICES.index(self.encoder) if self.encoder is not None else 0,
+            "block_style": BLOCK_STYLE_CHOICES.index(self.block_style),
+            "pool_style": POOL_STYLE_CHOICES.index(self.pool_style),
         }
 
     def to_dict(self) -> dict:
@@ -90,6 +102,8 @@ class ArchitectureSpec:
             "dropout": self.dropout,
             "optimizer": self.optimizer,
             "learning_rate": self.lr,
+            "block_style": self.block_style,
+            "pool_style": self.pool_style,
         }
         if self.task_type == "text":
             out["embedding_dim"] = self.embedding_dim
@@ -110,7 +124,8 @@ class ArchitectureSpec:
         """Cheap ordering key for tie-breaking: prefer smaller/faster models."""
         k = self.kernel_size if self.kernel_size is not None else 1
         conv_cost = k * k if self.task_type == "image" else 1
-        return self.num_blocks * self.units * conv_cost
+        block_mult = 2 if self.block_style == "residual" else 1
+        return self.num_blocks * self.units * conv_cost * block_mult
 
     def to_raw_dict(self) -> dict:
         return {
@@ -124,6 +139,8 @@ class ArchitectureSpec:
             "lr": self.lr,
             "embedding_dim": self.embedding_dim,
             "encoder": self.encoder,
+            "block_style": self.block_style,
+            "pool_style": self.pool_style,
         }
 
     @classmethod
@@ -131,24 +148,38 @@ class ArchitectureSpec:
         fields = {
             "task_type", "num_blocks", "units", "kernel_size", "activation",
             "dropout", "optimizer", "lr", "embedding_dim", "encoder",
+            "block_style", "pool_style",
         }
         return cls(**{k: v for k, v in d.items() if k in fields})
+
+    def _style_suffix(self, pool_applicable: bool) -> str:
+        """block_style/pool_style are only meaningful for tabular Dense, image
+        Conv2D, and conv1d-encoded text/timeseries (BatchNorm is applied
+        unconditionally there and isn't itself worth describing)."""
+        bits = []
+        if self.block_style == "residual":
+            bits.append("residual")
+        if pool_applicable and self.pool_style == "gap":
+            bits.append("gap")
+        return f" [{'+'.join(bits)}]" if bits else ""
 
     def describe(self) -> str:
         if self.task_type in ENCODER_TASKS:
             kind = self.encoder if self.encoder else "seq"
             extra = f", kernel={self.kernel_size}" if self.encoder == "conv1d" else ""
             prefix = f"embed{self.embedding_dim} -> " if self.embedding_dim is not None else ""
+            suffix = self._style_suffix(pool_applicable=self.encoder == "conv1d") if self.encoder == "conv1d" else ""
             return (
                 f"[{self.task_type}] {prefix}{self.num_blocks}x {kind}(units={self.units}{extra}) "
-                f"-> dropout={self.dropout} -> optimizer={self.optimizer}(lr={self.lr})"
+                f"-> dropout={self.dropout} -> optimizer={self.optimizer}(lr={self.lr}){suffix}"
             )
         kind = "Conv2D" if self.task_type == "image" else "Dense"
         extra = f", kernel={self.kernel_size}" if self.task_type == "image" else ""
+        suffix = self._style_suffix(pool_applicable=self.task_type == "image")
         return (
             f"[{self.task_type}] {self.num_blocks}x {kind}(units={self.units}{extra}, "
             f"act={self.activation}) -> dropout={self.dropout} -> "
-            f"optimizer={self.optimizer}(lr={self.lr})"
+            f"optimizer={self.optimizer}(lr={self.lr}){suffix}"
         )
 
 
@@ -169,19 +200,22 @@ def sample_random_spec(task_type: str, rng: np.random.Generator) -> Architecture
         lr=float(rng.choice(LR_CHOICES)),
         embedding_dim=int(rng.choice(EMBEDDING_CHOICES)) if task_type in EMBEDDING_TASKS else None,
         encoder=encoder,
+        block_style=str(rng.choice(BLOCK_STYLE_CHOICES)),
+        pool_style=str(rng.choice(POOL_STYLE_CHOICES)),
     )
 
 
 def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
     """Every architecture in the search space for a task type. Small enough to
-    score exhaustively at recommend time (tabular=576, image=1152, text=6912,
-    timeseries=2304)."""
+    score exhaustively at recommend time (tabular=2304, image=4608,
+    text=41472, timeseries=13824)."""
     kernels = KERNEL_CHOICES if task_type == "image" else [None]
     embeddings = EMBEDDING_CHOICES if task_type in EMBEDDING_TASKS else [None]
     encoders = ENCODER_CHOICES if task_type in ENCODER_TASKS else [None]
-    for nb, u, k, act, do, opt, lr, emb, enc in itertools.product(
+    for nb, u, k, act, do, opt, lr, emb, enc, bstyle, pstyle in itertools.product(
         NUM_BLOCKS_CHOICES, UNITS_CHOICES, kernels, ACTIVATION_CHOICES,
         DROPOUT_CHOICES, OPTIMIZER_CHOICES, LR_CHOICES, embeddings, encoders,
+        BLOCK_STYLE_CHOICES, POOL_STYLE_CHOICES,
     ):
         # For sequence encoders, kernel_size is only meaningful for conv1d.
         if task_type in ENCODER_TASKS:
@@ -193,6 +227,7 @@ def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
                 task_type=task_type, num_blocks=nb, units=u, kernel_size=kv,
                 activation=act, dropout=do, optimizer=opt, lr=lr,
                 embedding_dim=emb, encoder=enc,
+                block_style=bstyle, pool_style=pstyle,
             )
 
 
@@ -213,4 +248,6 @@ def decode_from_indices(task_type: str, indices: dict[str, int]) -> Architecture
         lr=LR_CHOICES[indices["lr"]],
         embedding_dim=EMBEDDING_CHOICES[indices["embedding"]] if task_type in EMBEDDING_TASKS else None,
         encoder=encoder,
+        block_style=BLOCK_STYLE_CHOICES[indices["block_style"]],
+        pool_style=POOL_STYLE_CHOICES[indices["pool_style"]],
     )

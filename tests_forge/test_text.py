@@ -24,7 +24,7 @@ def test_text_spec_roundtrip_all_encoders():
 
 def test_enumerate_text_covers_encoders_and_is_bounded():
     specs = list(enumerate_specs("text"))
-    assert len(specs) == 10368
+    assert len(specs) == 41472  # x4 vs pre-Track2's 10368: BLOCK_STYLE x POOL_STYLE axes
     assert {s.encoder for s in specs} == set(ENCODER_CHOICES)
     # conv1d specs carry a kernel; recurrent specs do not
     assert all(s.kernel_size is not None for s in specs if s.encoder == "conv1d")

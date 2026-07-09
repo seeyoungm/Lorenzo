@@ -1,0 +1,115 @@
+{
+  "name": "Lorenzo Tabular 1.1",
+  "created_at": "2026-07-09T04:37:14Z",
+  "task_type": "tabular",
+  "data": {
+    "task_type": "tabular",
+    "input_shape": [
+      30
+    ],
+    "output_dim": 4,
+    "num_samples": 8000,
+    "class_balance_entropy": 0.992463159005166,
+    "noise_level": 0.1,
+    "vocab_size": 0,
+    "source": "tabular_v1"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "tabular",
+      "blocks": [
+        {
+          "type": "dense",
+          "units": 128,
+          "activation": "tanh"
+        }
+      ],
+      "dropout": 0.2,
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "block_style": "plain",
+      "pool_style": "standard"
+    },
+    "test_accuracy": 0.9219,
+    "val_accuracy": 0.9256,
+    "num_params": 4868
+  },
+  "candidates": [
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9278,
+      "val_accuracy": 0.9275,
+      "test_accuracy": 0.9144,
+      "num_params": 9732
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9267,
+      "val_accuracy": 0.9144,
+      "test_accuracy": 0.9025,
+      "num_params": 9732
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=tanh) -> dropout=0.4 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9242,
+      "val_accuracy": 0.9287,
+      "test_accuracy": 0.915,
+      "num_params": 9732
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=128, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9224,
+      "val_accuracy": 0.9256,
+      "test_accuracy": 0.9219,
+      "num_params": 4868
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=128, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9212,
+      "val_accuracy": 0.9069,
+      "test_accuracy": 0.8969,
+      "num_params": 4868
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=relu) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9211,
+      "val_accuracy": 0.9125,
+      "test_accuracy": 0.9006,
+      "num_params": 9732
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=tanh) -> dropout=0.2 -> optimizer=adam(lr=0.01) [residual]",
+      "predicted_accuracy": 0.921,
+      "val_accuracy": 0.9381,
+      "test_accuracy": 0.9187,
+      "num_params": 84996
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=relu) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.92,
+      "val_accuracy": 0.9075,
+      "test_accuracy": 0.8956,
+      "num_params": 9732
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=256, act=tanh) -> dropout=0.0 -> optimizer=adam(lr=0.01) [residual]",
+      "predicted_accuracy": 0.9198,
+      "val_accuracy": 0.93,
+      "test_accuracy": 0.9131,
+      "num_params": 84996
+    },
+    {
+      "architecture": "[tabular] 1x Dense(units=128, act=tanh) -> dropout=0.4 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9185,
+      "val_accuracy": 0.9112,
+      "test_accuracy": 0.9044,
+      "num_params": 4868
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 60,
+    "tensorflow": "2.18.1",
+    "python": "3.12.10"
+  }
+}

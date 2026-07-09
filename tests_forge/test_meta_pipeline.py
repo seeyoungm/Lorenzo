@@ -11,8 +11,9 @@ def test_scorer_model_output_is_scalar():
 
 
 def test_enumerate_specs_sizes():
-    assert len(list(enumerate_specs("tabular"))) == 4 * 4 * 1 * 2 * 3 * 2 * 3
-    assert len(list(enumerate_specs("image"))) == 4 * 4 * 2 * 2 * 3 * 2 * 3
+    # x2 x2 at the end = BLOCK_STYLE_CHOICES x POOL_STYLE_CHOICES (Track 2 modernization axes)
+    assert len(list(enumerate_specs("tabular"))) == 4 * 4 * 1 * 2 * 3 * 2 * 3 * 2 * 2
+    assert len(list(enumerate_specs("image"))) == 4 * 4 * 2 * 2 * 3 * 2 * 3 * 2 * 2
 
 
 def test_corpus_records_include_all_trials():

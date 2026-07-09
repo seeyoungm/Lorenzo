@@ -23,7 +23,7 @@ def test_timeseries_spec_has_no_embedding_but_has_encoder():
 
 def test_enumerate_timeseries_size():
     specs = list(enumerate_specs("timeseries"))
-    assert len(specs) == 3456
+    assert len(specs) == 13824  # x4 vs pre-Track2's 3456: BLOCK_STYLE x POOL_STYLE axes
     assert all(s.embedding_dim is None for s in specs)
 
 

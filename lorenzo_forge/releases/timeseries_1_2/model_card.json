@@ -1,0 +1,129 @@
+{
+  "name": "Lorenzo TimeSeries 1.2",
+  "created_at": "2026-07-09T04:49:03Z",
+  "task_type": "timeseries",
+  "data": {
+    "task_type": "timeseries",
+    "input_shape": [
+      64,
+      3
+    ],
+    "output_dim": 5,
+    "num_samples": 6000,
+    "class_balance_entropy": 0.9997376634771697,
+    "noise_level": 0.1,
+    "vocab_size": 0,
+    "source": "timeseries_v1"
+  },
+  "winner": {
+    "architecture": {
+      "task_type": "timeseries",
+      "blocks": [
+        {
+          "type": "bilstm",
+          "units": 256
+        }
+      ],
+      "dropout": 0.0,
+      "optimizer": "adam",
+      "learning_rate": 0.01,
+      "block_style": "plain",
+      "pool_style": "standard"
+    },
+    "test_accuracy": 0.88,
+    "val_accuracy": 0.8675,
+    "num_params": 535045
+  },
+  "candidates": [
+    {
+      "architecture": "[timeseries] 1x bilstm(units=256) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9497,
+      "val_accuracy": 0.865,
+      "test_accuracy": 0.8567,
+      "num_params": 535045
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=256) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9489,
+      "val_accuracy": 0.8675,
+      "test_accuracy": 0.88,
+      "num_params": 535045
+    },
+    {
+      "architecture": "[timeseries] 1x bigru(units=256) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9487,
+      "val_accuracy": 0.8367,
+      "test_accuracy": 0.8408,
+      "num_params": 403461
+    },
+    {
+      "architecture": "[timeseries] 1x bigru(units=256) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9479,
+      "val_accuracy": 0.8333,
+      "test_accuracy": 0.8275,
+      "num_params": 403461
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=256) -> dropout=0.4 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9471,
+      "val_accuracy": 0.8417,
+      "test_accuracy": 0.8408,
+      "num_params": 535045
+    },
+    {
+      "architecture": "[timeseries] 1x bigru(units=256) -> dropout=0.4 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9461,
+      "val_accuracy": 0.8658,
+      "test_accuracy": 0.87,
+      "num_params": 403461
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=128) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9458,
+      "val_accuracy": 0.8408,
+      "test_accuracy": 0.8358,
+      "num_params": 136453
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=128) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.945,
+      "val_accuracy": 0.8275,
+      "test_accuracy": 0.8242,
+      "num_params": 136453
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=256) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9449,
+      "val_accuracy": 0.8308,
+      "test_accuracy": 0.8333,
+      "num_params": 535045
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=256) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9448,
+      "val_accuracy": 0.835,
+      "test_accuracy": 0.83,
+      "num_params": 535045
+    },
+    {
+      "architecture": "[timeseries] 1x bigru(units=128) -> dropout=0.2 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9448,
+      "val_accuracy": 0.8458,
+      "test_accuracy": 0.8467,
+      "num_params": 103429
+    },
+    {
+      "architecture": "[timeseries] 1x bilstm(units=256) -> dropout=0.0 -> optimizer=adam(lr=0.01)",
+      "predicted_accuracy": 0.9441,
+      "val_accuracy": 0.8342,
+      "test_accuracy": 0.8333,
+      "num_params": 535045
+    }
+  ],
+  "reproducibility": {
+    "seed": 0,
+    "epochs": 80,
+    "tensorflow": "2.18.1",
+    "python": "3.12.10"
+  }
+}
