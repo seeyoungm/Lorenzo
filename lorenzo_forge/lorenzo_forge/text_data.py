@@ -17,7 +17,7 @@ SOURCES = ("imdb", "reuters")
 VOCAB_CHOICES = (5000, 10000, 20000)
 SEQ_LEN_CHOICES = (100, 200)  # keep short: recurrent candidates train slowly on long sequences
 NUM_SAMPLES_RANGE = (1500, 3000)  # text needs enough data for a good arch to separate from a weak one
-REUTERS_CLASS_RANGE = (3, 9)  # use 3..8 of the most frequent topics
+REUTERS_CLASS_RANGE = (3, 47)  # use 3..46 of the most frequent topics (46 = real Reuters release shape)
 
 _CACHE: dict[tuple[str, int], tuple[np.ndarray, np.ndarray]] = {}
 

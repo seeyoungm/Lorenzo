@@ -41,10 +41,10 @@ aria2c -x 8 -s 8 -d ~/.keras/datasets -o cifar-10-batches-py-target_archive \
 
 (구버전 카드도 `releases/`에 히스토리로 남아 있음. 가중치 `model.keras`는 gitignore, 카드만 커밋.)
 
-## 스코어러 상태 (v0.8)
+## 스코어러 상태 (v0.9)
 - image 도메인이 이제 MNIST/Fashion-MNIST(흑백)뿐 아니라 **CIFAR-10(컬러)** 도 포함(`real_image.py`의 `SOURCES`, `release.py`의 `BUILTIN_IMAGE_DOMAINS`). task_type 개수는 여전히 4개(tabular/image/text/timeseries), 입력 차원은 v0.7과 동일한 42차원(색상 채널 수는 프로파일의 `log_input_size`에 이미 간접 반영되므로 별도 피처 추가 안 함).
 - 인코더 축 5종: lstm/gru/conv1d/bilstm/bigru(bidirectional). **block_style**(plain/residual) · **pool_style**(standard/gap) 축이 tabular Dense·image Conv2D·conv1d-인코딩된 text/timeseries에 적용됨(재귀 인코더엔 미적용 — BatchNorm도 마찬가지로 재귀 레이어엔 안 붙임).
-- 코퍼스 120 프로파일, CIFAR 포함 4도메인으로 재빌드 → 재학습(v0.7 대비 코퍼스만 갱신, 검색공간은 동일).
+- **v0.9 변경(텍스트 도메인 버그 수정)**: `text_data.py`의 `REUTERS_CLASS_RANGE`를 (3,9)→**(3,47)** 로 넓힘. 기존엔 코퍼스의 텍스트 프로파일이 output_dim 3~8만 다뤄서, 실제 46클래스 Reuters를 릴리스할 때 스코어러가 학습 분포 밖으로 극단 외삽 → predicted_accuracy가 0.0001로 붕괴했음. 텍스트 도메인만 **증분 재빌드**(`--domains text --base-corpus …`)해서 output_dim 2~46을 커버하도록 갱신 → 재학습. 확인: Reuters 예측이 이제 0.73~0.75로 정상화(다른 도메인 tabular 0.82 / timeseries 0.88 영향 없음).
 
 ## 어디까지 했고, 다음에 뭘 할지
 목표: **각 도메인 릴리스 성능 개선.** 두 트랙:
@@ -65,7 +65,7 @@ aria2c -x 8 -s 8 -d ~/.keras/datasets -o cifar-10-batches-py-target_archive \
   - **Tabular 1.1: 0.892→0.922** ✓ (`--top-k 10 --epochs 60`, 승자 `1x Dense(units=128, act=tanh)`, block_style/pool_style 특별히 안 씀)
   - **TimeSeries 1.2: 0.867→0.880** ✓ (`--top-k 12 --epochs 80`, 승자는 `1x bilstm(units=256)` — 재귀 인코더라 모더나이제이션 축 자체는 무관, top-k를 넓혀서 더 좋은 재귀 후보를 찾은 게 개선의 핵심)
   - **Image: 0.990 시도 → 0.983로 후퇴, 채택 안 함** (`--top-k 10 --epochs 60`, 풀 MNIST 7만 샘플). predicted_accuracy가 top-10 전부 0.846~0.862로 촘촘히 몰려 num_blocks=1 계열만 뽑혔고, residual 후보(2블록 254유닛 5x5커널)는 후보당 50분 넘게 걸려 top-k를 더 넓히는 비용이 너무 큼 (이 릴리스 하나에만 총 ~3시간 소요). 기존 1.1 유지.
-  - **Text (IMDB): 0.867 시도 → 0.861로 후퇴, 채택 안 함.** **Text (Reuters): 0.818 시도 → 0.794로 후퇴, 채택 안 함.** 둘 다 top-10 후보 중 일부(bigru 계열)가 실측 시 거의 랜덤 수준(val/test ≈ 0.000~0.5)으로 붕괴 — Track 1에서 관찰됐던 "GRU 계열 예측은 높은데 실측 붕괴" 패턴이 재현됨. 이 텍스트 도메인 학습 불안정성은 Track 2가 만든 문제가 아니라 기존부터 있던 것으로 보이고, 별도 조사가 필요함(아래 "다음 작업" 참고).
+  - **Text (IMDB): 0.867 시도 → 0.861로 후퇴, 채택 안 함.** **Text (Reuters): 0.818 시도 → 0.794로 후퇴, 채택 안 함.** 둘 다 top-10 후보 중 일부(bigru 계열)가 실측 시 거의 랜덤 수준(val/test ≈ 0.000~0.5)으로 붕괴 — Track 1에서 관찰됐던 "GRU 계열 예측은 높은데 실측 붕괴" 패턴이 재현됨. 이 텍스트 도메인 학습 불안정성은 Track 2가 만든 문제가 아니라 기존부터 있던 것 — **v0.9에서 조사·부분 해결됨**(아래 "텍스트 도메인 조사 결과" 참고).
   - **CIFAR 1.0: 신규 0.799** (`--num-samples 60000 --top-k 8 --epochs 40`, 승자 `4x Conv2D(units=128, kernel=5, act=tanh) [residual]`). 기존 릴리스가 없던 도메인이라 비교 대상 없이 그대로 첫 릴리스로 채택. Conv2D residual 후보가 CIFAR(32x32x3, 6만 장)에서 후보당 최대 ~22분(1220-1312초) 소요 — MNIST 풀데이터의 residual 후보(50분+)보다는 빠르지만 여전히 비쌈.
   - **결론**: 스코어러를 재학습할 때마다 도메인별로 이전 최적점을 못 찾는 "스코어러 드리프트" 현상이 tabular(트랙 1) 이후 image/text/text-reuters(트랙 2)에서도 반복 관찰됨. top-k를 넓히는 것만으로는 항상 해결되지 않음(특히 image처럼 후보당 비용이 큰 도메인) — `release()`가 "필터일 뿐, 실측이 최종 결정"이라는 설계 원칙 덕분에 이번에도 나쁜 결과를 자동으로 걸러낼 수 있었음.
 - **엔지니어링 사고 두 건 (둘 다 수정 완료)**:
@@ -108,9 +108,16 @@ lorenzo-forge train-meta --epochs 30 --corpus $S --out lorenzo_forge/artifacts/s
 ## 주요 파일
 `search_space.py`(아키텍처 인코딩/열거) · `profile.py`(데이터 특징) · `candidate_trainer.py`(모델 빌드/학습, 4도메인+bidirectional) · `search.py`(랜덤서치+tie-break) · `dataset_builder.py`(코퍼스) · `meta_model.py`(스코어러) · `release.py`(릴리스+full_train) · `datasets.py`(재현 데이터) · `real_image.py`/`text_data.py`/`timeseries_data.py`(도메인 데이터) · `cli.py`
 
-## 다음 로컬 작업 제안 (트랙 1·2 + CIFAR 완료 후)
-1. **텍스트 도메인 학습 불안정성 조사**: IMDB/Reuters 재릴리스 후보 중 bigru/lr=0.01 근방 조합이 종종 val/test ≈ 0.000~0.5로 붕괴. 그래디언트 폭주인지 특정 lr 값 문제인지 확인해볼 만함 — 고쳐지면 top-k를 더 좁게 잡아도 안전해져서 텍스트 재릴리스 비용이 줄어듦.
-2. Reuters 스코어러 predicted_accuracy=0.000 이슈 조사 (여전히 미해결, v0.7/v0.8에서도 재현됨).
-3. 사전학습 임베딩(GloVe)/Transformer로 텍스트 정확도 천장(~0.86) 돌파 — 비용 큰 별도 이니셔티브.
-4. Image/CIFAR 도메인은 predicted_accuracy가 촘촘하게 몰리는 경향이 있어 num_blocks=1 계열만 자주 뽑힘 — residual 후보가 후보당 20~50분 걸려 top-k를 넓히기 부담스러움. 검색공간에서 image의 residual 변형을 유닛 수가 작을 때만 시도하게 제한하면(예: units<=128) 더 넓게 탐색 가능할 수도.
-5. CIFAR 1.0(0.799)은 top-k 8, epochs 40으로 뽑은 첫 시도 — top-k나 epochs를 늘려 재도전하면(비용 감안) 더 오를 여지 있음.
+## 텍스트 도메인 조사 결과 (v0.9, 두 이슈 분리됨)
+이전 문서의 "Reuters predicted_accuracy=0.000"과 "텍스트 학습 붕괴"는 **별개의 두 원인**이었음:
+1. **`0.0001` 예측 (Reuters) — 완전 해결.** 원인은 스코어러 버그가 아니라 **코퍼스 커버리지 부족**: 텍스트 프로파일이 output_dim 3~8만 있어서 실제 46클래스 Reuters가 학습 분포 밖 → 스코어러가 0으로 외삽. `REUTERS_CLASS_RANGE (3,47)` 로 넓히고 텍스트 도메인 증분 재빌드 → 예측 정상화(위 "스코어러 상태 v0.9").
+2. **학습 중 `0.5`/찍기 수준 붕괴 — 부분 완화.** 원인은 **넓은 bidirectional RNN + lr=0.01의 그래디언트 폭주**(dead-network trap). `candidate_trainer._make_optimizer`에 **clipnorm=1.0** 추가. 재현 실험(50k IMDB, `1x bigru(256)`, 5개 시드)에서 clipnorm 없으면 40%(2/5)가 정확히 0.0으로 붕괴 → clipnorm=1.0으로 모두 정상 학습됨을 확인. **단, 완전 해결은 아님**: 재릴리스 실측에서 `3x`/`4x bigru(128)` at lr=0.01 같은 **더 깊은 스택**은 clipnorm=1.0으로도 여전히 0.5로 붕괴함(얕은 1x/2x는 정상). 다만 `release()`의 "필터일 뿐, 실측이 최종 결정" 설계 덕에 붕괴 후보는 자동으로 탈락하고 정상 후보가 승자로 뽑힘 — 릴리스를 깨진 않음(비용만 낭비).
+
+**재릴리스 결과**: Reuters 0.796 / IMDB 0.861 — 둘 다 기존(0.818 / 0.867)보다 낮아 **채택 안 함**. 버그는 고쳤지만 정확도 개선으로 직결되진 않았음(v0.6 bidirectional 때와 동일한 교훈). 스코어러/코퍼스/코드 수정은 그 자체로 정합성 개선이라 커밋함.
+
+## 다음 로컬 작업 제안
+1. **깊은 bigru 붕괴 완전 해결**: clipnorm=1.0이 얕은 스택만 잡음. clipnorm 더 낮추기(0.5) 또는 검색공간에서 깊은 재귀 스택의 lr 상한을 낮추기(예: 3+블록 재귀는 lr≤1e-3) 등 시도해볼 만함 — 단 후자는 검색공간 변경이라 전체 재빌드 필요.
+2. 사전학습 임베딩(GloVe)/Transformer로 텍스트 정확도 천장(~0.86) 돌파 — 비용 큰 별도 이니셔티브.
+3. Image/CIFAR 도메인은 predicted_accuracy가 촘촘하게 몰리는 경향이 있어 num_blocks=1 계열만 자주 뽑힘 — residual 후보가 후보당 20~50분 걸려 top-k를 넓히기 부담스러움. 검색공간에서 image의 residual 변형을 유닛 수가 작을 때만 시도하게 제한하면(예: units<=128) 더 넓게 탐색 가능할 수도.
+4. CIFAR 1.0(0.799)은 top-k 8, epochs 40으로 뽑은 첫 시도 — top-k나 epochs를 늘려 재도전하면(비용 감안) 더 오를 여지 있음.
+5. **텍스트 릴리스는 비쌈**: bigru 후보 + 큰 데이터(IMDB 5만)면 후보당 수십 분~시간 단위. 재릴리스할 땐 `--num-samples`를 2.5만 정도로 줄여도 이진 분류엔 충분(50k로 돌렸다가 첫 후보에 3시간+ 걸려 중단한 적 있음).

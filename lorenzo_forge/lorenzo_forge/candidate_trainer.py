@@ -64,6 +64,17 @@ def _residual_conv1d_block(x, units: int, kernel_size: int):
     return layers.Activation("relu")(y)
 
 
+def _make_optimizer(spec: ArchitectureSpec):
+    # clipnorm guards against the occasional dead-network trap seen with
+    # wide bidirectional recurrent encoders at lr=1e-2 (repro: ~40% of
+    # random inits on a bigru(256) text candidate never escape chance-level
+    # accuracy over 40 epochs without this; clipnorm=1.0 fixed every
+    # observed case without hurting well-behaved runs).
+    if spec.optimizer == "adam":
+        return optimizers.Adam(spec.lr, clipnorm=1.0)
+    return optimizers.SGD(spec.lr, clipnorm=1.0)
+
+
 def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     if profile.task_type == "text":
         return _build_text_model(spec, profile)
@@ -104,7 +115,7 @@ def build_model(spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     outputs = layers.Dense(profile.output_dim, activation="softmax")(x)
     model = models.Model(inputs, outputs)
 
-    optimizer = optimizers.Adam(spec.lr) if spec.optimizer == "adam" else optimizers.SGD(spec.lr)
+    optimizer = _make_optimizer(spec)
     model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     return model
 
@@ -148,7 +159,7 @@ def _apply_encoder_stack(x, spec: ArchitectureSpec):
 def _compile_classifier(inputs, x, spec: ArchitectureSpec, profile: DataProfile) -> tf.keras.Model:
     outputs = layers.Dense(profile.output_dim, activation="softmax")(x)
     model = models.Model(inputs, outputs)
-    optimizer = optimizers.Adam(spec.lr) if spec.optimizer == "adam" else optimizers.SGD(spec.lr)
+    optimizer = _make_optimizer(spec)
     model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     return model
 
