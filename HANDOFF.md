@@ -33,18 +33,19 @@ aria2c -x 8 -s 8 -d ~/.keras/datasets -o cifar-10-batches-py-target_archive \
 | 릴리스 | 도메인 | test | 산출물 |
 |---|---|---|---|
 | Lorenzo Image 1.1 | 이미지(전체 MNIST) | **0.990** | `releases/image_1_1/` |
-| Lorenzo Tabular 1.1 | 표형(`tabular_v1`) | **0.922** (was 0.892) | `releases/tabular_1_1/` |
-| Lorenzo TimeSeries 1.2 | 시계열(`timeseries_v1`) | **0.880** (was 0.867) | `releases/timeseries_1_2/` |
+| Lorenzo Tabular 1.2 | 표형(`tabular_v1`) | **0.931** (was 0.922) | `releases/tabular_1_2/` |
+| Lorenzo TimeSeries 1.2 | 시계열(`timeseries_v1`) | **0.880** | `releases/timeseries_1_2/` |
 | Lorenzo Text 1.3 | 텍스트(IMDB) | 0.867 | `releases/text_1_3/` |
 | Lorenzo Text 1.3 (Reuters) | 텍스트(Reuters 46클래스) | 0.818 | `releases/text_reuters_1_3/` |
 | Lorenzo CIFAR 1.0 | 이미지(CIFAR-10, 컬러 3만+) | **0.799** (신규) | `releases/cifar_1_0/` |
 
 (구버전 카드도 `releases/`에 히스토리로 남아 있음. 가중치 `model.keras`는 gitignore, 카드만 커밋.)
 
-## 스코어러 상태 (v0.9)
-- image 도메인이 이제 MNIST/Fashion-MNIST(흑백)뿐 아니라 **CIFAR-10(컬러)** 도 포함(`real_image.py`의 `SOURCES`, `release.py`의 `BUILTIN_IMAGE_DOMAINS`). task_type 개수는 여전히 4개(tabular/image/text/timeseries), 입력 차원은 v0.7과 동일한 42차원(색상 채널 수는 프로파일의 `log_input_size`에 이미 간접 반영되므로 별도 피처 추가 안 함).
-- 인코더 축 5종: lstm/gru/conv1d/bilstm/bigru(bidirectional). **block_style**(plain/residual) · **pool_style**(standard/gap) 축이 tabular Dense·image Conv2D·conv1d-인코딩된 text/timeseries에 적용됨(재귀 인코더엔 미적용 — BatchNorm도 마찬가지로 재귀 레이어엔 안 붙임).
-- **v0.9 변경(텍스트 도메인 버그 수정)**: `text_data.py`의 `REUTERS_CLASS_RANGE`를 (3,9)→**(3,47)** 로 넓힘. 기존엔 코퍼스의 텍스트 프로파일이 output_dim 3~8만 다뤄서, 실제 46클래스 Reuters를 릴리스할 때 스코어러가 학습 분포 밖으로 극단 외삽 → predicted_accuracy가 0.0001로 붕괴했음. 텍스트 도메인만 **증분 재빌드**(`--domains text --base-corpus …`)해서 output_dim 2~46을 커버하도록 갱신 → 재학습. 확인: Reuters 예측이 이제 0.73~0.75로 정상화(다른 도메인 tabular 0.82 / timeseries 0.88 영향 없음).
+## 스코어러 상태 (v1.0)
+- image 도메인이 MNIST/Fashion-MNIST(흑백) + **CIFAR-10(컬러)** 포함. task_type 4개(tabular/image/text/timeseries), 입력 42차원(v0.7 이후 불변 — 아래 검색공간 제약은 축을 **줄인 게 아니라 조합을 막은 것**이라 one-hot 슬롯 수는 그대로).
+- 인코더 축 5종: lstm/gru/conv1d/bilstm/bigru. **block_style**(plain/residual) · **pool_style**(standard/gap) 축이 tabular Dense·image Conv2D·conv1d-인코딩된 text/timeseries에 적용(재귀 인코더엔 미적용).
+- **v0.9 변경(텍스트 버그)**: `REUTERS_CLASS_RANGE` (3,9)→(3,47). 코퍼스 텍스트 프로파일이 output_dim 3~8만 담아 실제 46클래스 Reuters가 학습 분포 밖 → 예측 0.0001 붕괴하던 걸 해결(예측 0.73~0.75 정상화).
+- **v1.0 변경(검색공간 제약)**: `search_space.is_valid_spec`로 두 조합을 원천 차단 — (1) **재귀 인코더 3블록 이상 + lr=1e-2** (clipnorm으로도 안 잡히던 dead-network 붕괴), (2) **image residual + units=256** (후보당 50분+인데 안 뽑힘). 열거 크기 image 4608→4032 / text 41472→36864 / timeseries 13824→12288 / tabular 2304(불변). 전체 4도메인 코퍼스 재빌드 → 재학습. **효과는 정확도가 아니라 엔진 효율/안정성** — 붕괴·초고비용 후보를 서치·릴리스 양쪽에서 아예 안 건드림. 부수적으로 Tabular이 0.922→0.931로 올랐지만(제약된 스코어러가 3x Dense(256)를 추천), TimeSeries 재릴리스는 0.864로 오히려 후퇴해 1.2 유지 — "스코어러 재학습 = 정확도 향상"은 여전히 보장 안 됨.
 
 ## 어디까지 했고, 다음에 뭘 할지
 목표: **각 도메인 릴리스 성능 개선.** 두 트랙:
@@ -115,9 +116,12 @@ lorenzo-forge train-meta --epochs 30 --corpus $S --out lorenzo_forge/artifacts/s
 
 **재릴리스 결과**: Reuters 0.796 / IMDB 0.861 — 둘 다 기존(0.818 / 0.867)보다 낮아 **채택 안 함**. 버그는 고쳤지만 정확도 개선으로 직결되진 않았음(v0.6 bidirectional 때와 동일한 교훈). 스코어러/코퍼스/코드 수정은 그 자체로 정합성 개선이라 커밋함.
 
+## 검색공간 제약 (v1.0) — 위 두 후속과제 중 일부 처리됨
+- 이전 문서의 "깊은 bigru 붕괴 완전 해결"과 "image residual 유닛 제한"은 **v1.0에서 검색공간 제약으로 처리됨**(`search_space.is_valid_spec`, 위 "스코어러 상태 v1.0" 참고). 깊은 재귀 스택은 애초에 붕괴하는 lr=1e-2 조합을 못 만들고, image residual은 256유닛을 못 뽑음 → 서치/릴리스에서 붕괴·초고비용 후보를 아예 안 건드림.
+- 단 이건 "붕괴를 못 일어나게 막은 것"이지 "깊은 재귀를 lr=1e-2에서도 학습되게 고친 것"은 아님. 그 조합을 진짜 쓰고 싶으면 여전히 clipnorm 강화나 lr warmup 같은 별도 처방이 필요.
+
 ## 다음 로컬 작업 제안
-1. **깊은 bigru 붕괴 완전 해결**: clipnorm=1.0이 얕은 스택만 잡음. clipnorm 더 낮추기(0.5) 또는 검색공간에서 깊은 재귀 스택의 lr 상한을 낮추기(예: 3+블록 재귀는 lr≤1e-3) 등 시도해볼 만함 — 단 후자는 검색공간 변경이라 전체 재빌드 필요.
-2. 사전학습 임베딩(GloVe)/Transformer로 텍스트 정확도 천장(~0.86) 돌파 — 비용 큰 별도 이니셔티브.
-3. Image/CIFAR 도메인은 predicted_accuracy가 촘촘하게 몰리는 경향이 있어 num_blocks=1 계열만 자주 뽑힘 — residual 후보가 후보당 20~50분 걸려 top-k를 넓히기 부담스러움. 검색공간에서 image의 residual 변형을 유닛 수가 작을 때만 시도하게 제한하면(예: units<=128) 더 넓게 탐색 가능할 수도.
-4. CIFAR 1.0(0.799)은 top-k 8, epochs 40으로 뽑은 첫 시도 — top-k나 epochs를 늘려 재도전하면(비용 감안) 더 오를 여지 있음.
-5. **텍스트 릴리스는 비쌈**: bigru 후보 + 큰 데이터(IMDB 5만)면 후보당 수십 분~시간 단위. 재릴리스할 땐 `--num-samples`를 2.5만 정도로 줄여도 이진 분류엔 충분(50k로 돌렸다가 첫 후보에 3시간+ 걸려 중단한 적 있음).
+1. 사전학습 임베딩(GloVe)/Transformer로 텍스트 정확도 천장(~0.86) 돌파 — 비용 큰 별도 이니셔티브.
+2. CIFAR 1.0(0.799)은 top-k 8, epochs 40으로 뽑은 첫 시도 — v1.0 스코어러는 CIFAR에 `3x Conv2D(256) plain`을 추천함(기존 승자 `4x Conv2D(128) residual`과 다름). top-k/epochs 늘려 재도전하면 더 오를 여지 있음(단 후보당 수십 분, 총 몇 시간).
+3. **텍스트 릴리스는 비쌈**: bilstm/bigru 후보 + 큰 데이터(IMDB 5만)면 후보당 수십 분~시간 단위. 재릴리스할 땐 `--num-samples`를 2.5만 정도로 줄여도 이진 분류엔 충분(50k로 돌렸다가 첫 후보에 3시간+ 걸려 중단한 적 있음).
+4. **재릴리스 = 정확도 향상 아님(반복 확인됨)**: 스코어러 재학습마다 도메인별로 결과가 오르락내리락함. v1.0에서도 Tabular은 올랐지만(0.931) TimeSeries는 후퇴(0.864<0.880). 새 스코어러로 재릴리스할 땐 반드시 기존 카드의 test acc와 비교해서 개선된 것만 채택.

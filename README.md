@@ -13,13 +13,13 @@
 | 릴리스 | 도메인 | 데이터 | 실측 test acc | 우승 아키텍처 |
 |---|---|---|---|---|
 | **Lorenzo Image 1.1** | 이미지 | MNIST (전체 7만) | **0.990** | 1× Conv2D(256, k5) adam |
-| **Lorenzo Tabular 1.1** | 표형 | `tabular_v1` (재현 가능) | **0.922** | 1× Dense(128, tanh) adam |
+| **Lorenzo Tabular 1.2** | 표형 | `tabular_v1` (재현 가능) | **0.931** | 3× Dense(256, tanh) adam |
 | **Lorenzo TimeSeries 1.2** | 시계열 | `timeseries_v1` (재현 가능) | **0.880** | 1× BiLSTM(256) adam |
 | **Lorenzo Text 1.3** | 텍스트 | IMDB 감성(2클래스) | **0.867** | embed64 → 1× Conv1D(256, k3) adam |
 | **Lorenzo Text 1.3 (Reuters)** | 텍스트 | Reuters 토픽(46클래스) | **0.818** | embed64 → 1× Conv1D(256, k3) adam |
 | **Lorenzo CIFAR 1.0** | 이미지(컬러) | CIFAR-10 (전체 6만) | **0.799** | 4× Conv2D(128, k5, tanh) residual adam |
 
-> Image 1.1은 1.0(0.969) 대비 **전체 MNIST + LR 스케줄링**으로 재학습해 0.990으로 향상. Tabular/TimeSeries/Text는 검색공간에 **BatchNorm + 잔차(residual) 블록 + global-average-pooling** 축을 추가한 스코어러(v0.7)로 재릴리스한 결과이며, Tabular(+0.030)·TimeSeries(+0.013)는 향상됐지만 Image/Text는 이번 검색공간 확장으로 기존 기록을 못 넘어 이전 버전을 유지 중 — 릴리스 파이프라인이 "스코어러 추천을 실측으로 검증"하는 설계 원칙대로 동작한 결과. **CIFAR 1.0은 신규 도메인**(컬러 이미지) — 원본 배포처가 커넥션당 대역폭을 제한해 병렬 다운로드(`aria2c`)로 우회 후 코퍼스에 포함, 첫 릴리스로 채택. 자세한 내용은 `HANDOFF.md` 참조.
+> 여러 세대의 스코어러(v0.6~v1.0)를 거치며 각 도메인 릴리스를 개선. Tabular은 최신 v1.0 스코어러(검색공간에 학습 불안정·초고비용 조합을 못 뽑게 하는 제약 추가)로 0.922→**0.931**로 향상. **CIFAR 1.0은 신규 도메인**(컬러 이미지) — 원본 배포처가 커넥션당 대역폭을 제한해 병렬 다운로드(`aria2c`)로 우회 후 코퍼스에 포함. Image/Text 등 일부 도메인은 스코어러를 재학습해도 기존 기록을 못 넘어 이전 버전을 유지 중인데, 이는 릴리스 파이프라인이 "스코어러 추천을 실측으로 검증"해 하락을 자동으로 걸러내는 설계 원칙이 작동한 결과다. 자세한 내용은 `HANDOFF.md` 참조.
 
 ## 새 릴리스 만들기
 

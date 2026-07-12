@@ -29,6 +29,15 @@ EMBEDDING_TASKS = ("text",)
 BLOCK_STYLE_CHOICES = ["plain", "residual"]
 POOL_STYLE_CHOICES = ["standard", "gap"]
 
+# Search-space constraints (restrictions only -- they narrow which axis
+# combinations are legal but add no new axes, so HEADS/ARCH_FEATURE_DIM and the
+# scorer encoding are unchanged; only the corpus/scorer need rebuilding to
+# reflect the narrower distribution). See is_valid_spec for the rationale.
+RECURRENT_ENCODERS = ("lstm", "gru", "bilstm", "bigru")
+DEEP_STACK_MIN_BLOCKS = 3      # 3+ recurrent blocks is where high-lr collapse appears
+DEEP_RECURRENT_MAX_LR = 1e-3   # deep recurrent stacks may not use lr=1e-2
+IMAGE_RESIDUAL_MAX_UNITS = 128  # image residual conv2d capped below the costly 256-wide variant
+
 # Fixed head order/sizes. Used as the one-hot layout for architecture encoding
 # and (historically) as the classification meta-model's output heads.
 HEADS = {
@@ -183,32 +192,69 @@ class ArchitectureSpec:
         )
 
 
+def is_valid_spec(spec: ArchitectureSpec) -> bool:
+    """Whether an architecture is inside the (constrained) search space.
+
+    Both rules exclude architectures that empirically waste search compute
+    without ever winning a release:
+
+    - Deep recurrent stacks at lr=1e-2 blow up (gradient explosion -> a
+      dead network stuck at chance-level accuracy). clipnorm=1.0 rescued
+      shallow bidirectional stacks but not 3+ block ones, so those are
+      excluded from the space outright.
+    - Wide (256-unit) residual Conv2D is ~50min per candidate on full-res
+      images and never won, so image residual blocks are capped at 128 units.
+    """
+    if (
+        spec.encoder in RECURRENT_ENCODERS
+        and spec.num_blocks >= DEEP_STACK_MIN_BLOCKS
+        and spec.lr > DEEP_RECURRENT_MAX_LR
+    ):
+        return False
+    if (
+        spec.task_type == "image"
+        and spec.block_style == "residual"
+        and spec.units > IMAGE_RESIDUAL_MAX_UNITS
+    ):
+        return False
+    return True
+
+
 def sample_random_spec(task_type: str, rng: np.random.Generator) -> ArchitectureSpec:
-    encoder = str(rng.choice(ENCODER_CHOICES)) if task_type in ENCODER_TASKS else None
-    if task_type == "image" or (task_type in ENCODER_TASKS and encoder == "conv1d"):
-        kernel_size = int(rng.choice(KERNEL_CHOICES))
-    else:
-        kernel_size = None
-    return ArchitectureSpec(
-        task_type=task_type,
-        num_blocks=int(rng.choice(NUM_BLOCKS_CHOICES)),
-        units=int(rng.choice(UNITS_CHOICES)),
-        kernel_size=kernel_size,
-        activation=str(rng.choice(ACTIVATION_CHOICES)),
-        dropout=float(rng.choice(DROPOUT_CHOICES)),
-        optimizer=str(rng.choice(OPTIMIZER_CHOICES)),
-        lr=float(rng.choice(LR_CHOICES)),
-        embedding_dim=int(rng.choice(EMBEDDING_CHOICES)) if task_type in EMBEDDING_TASKS else None,
-        encoder=encoder,
-        block_style=str(rng.choice(BLOCK_STYLE_CHOICES)),
-        pool_style=str(rng.choice(POOL_STYLE_CHOICES)),
-    )
+    # Rejection-sample so the sampler and the exhaustive enumerator draw from
+    # exactly the same constrained space. The excluded fraction is small, so
+    # this terminates quickly; the bound is just a safety net.
+    spec = None
+    for _ in range(1000):
+        encoder = str(rng.choice(ENCODER_CHOICES)) if task_type in ENCODER_TASKS else None
+        if task_type == "image" or (task_type in ENCODER_TASKS and encoder == "conv1d"):
+            kernel_size = int(rng.choice(KERNEL_CHOICES))
+        else:
+            kernel_size = None
+        spec = ArchitectureSpec(
+            task_type=task_type,
+            num_blocks=int(rng.choice(NUM_BLOCKS_CHOICES)),
+            units=int(rng.choice(UNITS_CHOICES)),
+            kernel_size=kernel_size,
+            activation=str(rng.choice(ACTIVATION_CHOICES)),
+            dropout=float(rng.choice(DROPOUT_CHOICES)),
+            optimizer=str(rng.choice(OPTIMIZER_CHOICES)),
+            lr=float(rng.choice(LR_CHOICES)),
+            embedding_dim=int(rng.choice(EMBEDDING_CHOICES)) if task_type in EMBEDDING_TASKS else None,
+            encoder=encoder,
+            block_style=str(rng.choice(BLOCK_STYLE_CHOICES)),
+            pool_style=str(rng.choice(POOL_STYLE_CHOICES)),
+        )
+        if is_valid_spec(spec):
+            return spec
+    return spec
 
 
 def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
-    """Every architecture in the search space for a task type. Small enough to
-    score exhaustively at recommend time (tabular=2304, image=4608,
-    text=41472, timeseries=13824)."""
+    """Every (valid) architecture in the search space for a task type. Small
+    enough to score exhaustively at recommend time. Post-constraint sizes:
+    tabular=2304, image=4032, text=36864, timeseries=12288 (see is_valid_spec
+    for what the constraints exclude)."""
     kernels = KERNEL_CHOICES if task_type == "image" else [None]
     embeddings = EMBEDDING_CHOICES if task_type in EMBEDDING_TASKS else [None]
     encoders = ENCODER_CHOICES if task_type in ENCODER_TASKS else [None]
@@ -223,12 +269,14 @@ def enumerate_specs(task_type: str) -> Iterator[ArchitectureSpec]:
         else:
             k_vals = [k]
         for kv in k_vals:
-            yield ArchitectureSpec(
+            spec = ArchitectureSpec(
                 task_type=task_type, num_blocks=nb, units=u, kernel_size=kv,
                 activation=act, dropout=do, optimizer=opt, lr=lr,
                 embedding_dim=emb, encoder=enc,
                 block_style=bstyle, pool_style=pstyle,
             )
+            if is_valid_spec(spec):
+                yield spec
 
 
 def decode_from_indices(task_type: str, indices: dict[str, int]) -> ArchitectureSpec:

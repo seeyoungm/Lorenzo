@@ -11,9 +11,12 @@ def test_scorer_model_output_is_scalar():
 
 
 def test_enumerate_specs_sizes():
-    # x2 x2 at the end = BLOCK_STYLE_CHOICES x POOL_STYLE_CHOICES (Track 2 modernization axes)
+    # x2 x2 at the end = BLOCK_STYLE_CHOICES x POOL_STYLE_CHOICES (Track 2 modernization axes).
+    # tabular has no constraint applied (deep-recurrent lr cap & image-residual
+    # unit cap don't touch it), so it stays the full product.
     assert len(list(enumerate_specs("tabular"))) == 4 * 4 * 1 * 2 * 3 * 2 * 3 * 2 * 2
-    assert len(list(enumerate_specs("image"))) == 4 * 4 * 2 * 2 * 3 * 2 * 3 * 2 * 2
+    # image: full 4608 minus 576 residual+units=256 combos excluded by is_valid_spec.
+    assert len(list(enumerate_specs("image"))) == 4 * 4 * 2 * 2 * 3 * 2 * 3 * 2 * 2 - 576
 
 
 def test_corpus_records_include_all_trials():
