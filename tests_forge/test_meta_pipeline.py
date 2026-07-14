@@ -1,3 +1,5 @@
+import numpy as np
+
 from lorenzo_forge.dataset_builder import build_training_corpus, load_training_corpus
 from lorenzo_forge.meta_model import SCORER_INPUT_DIM, build_scorer_model, recommend, train_scorer_model
 from lorenzo_forge.profile import DataProfile
@@ -67,6 +69,33 @@ def test_scorer_end_to_end_recommend():
     assert spec.kernel_size is None
     assert 0.0 <= predicted_acc <= 1.0
     assert len(ranked) == 5
-    # ranked must be sorted by predicted score, descending
+    # ranked is ordered by score bucket (descending) then complexity, so it is
+    # descending up to within-bucket tie-break: no pick may sit more than one
+    # tie_tolerance below an earlier one.
+    tie_tolerance = 0.02
     preds = [p for _, p in ranked]
-    assert preds == sorted(preds, reverse=True)
+    for earlier, later in zip(preds, preds[1:]):
+        assert later <= earlier + tie_tolerance
+
+
+class _ConstantScorer:
+    """Stand-in scorer that predicts the same accuracy for every architecture,
+    forcing the entire search space into a single tie bucket."""
+
+    def predict(self, feats, verbose=0):
+        return np.full((len(feats), 1), 0.5, dtype="float32")
+
+
+def test_recommend_tie_break_prefers_cheapest_when_scores_tie():
+    profile = DataProfile("tabular", (10,), 3, 500, 1.0, 0.2)
+    specs = list(enumerate_specs(profile.task_type))
+    cheapest = min(specs, key=lambda s: (s.complexity_proxy(), s.describe()))
+
+    spec, predicted_acc, ranked = recommend(_ConstantScorer(), profile, top_k=5)
+
+    # Every architecture scores identically, so the complexity tie-break decides:
+    # the top pick must be the single cheapest spec in the space.
+    assert spec == cheapest
+    assert predicted_acc == 0.5
+    proxies = [s.complexity_proxy() for s, _ in ranked]
+    assert proxies == sorted(proxies)  # ranked ascending in cost within the tie

@@ -75,13 +75,29 @@ def score_specs(model: tf.keras.Model, profile: DataProfile, specs: list[Archite
 
 
 def recommend(
-    model: tf.keras.Model, profile: DataProfile, top_k: int = 1
+    model: tf.keras.Model, profile: DataProfile, top_k: int = 1, tie_tolerance: float = 0.02
 ) -> tuple[ArchitectureSpec, float, list[tuple[ArchitectureSpec, float]]]:
     """Enumerate the search space, score every architecture, return the best.
-    Returns (best_spec, predicted_accuracy, top_k ranked [(spec, pred), ...])."""
+    Returns (best_spec, predicted_accuracy, top_k ranked [(spec, pred), ...]).
+
+    The scorer barely separates its top candidates -- across every domain the
+    top-k predictions span <0.025, i.e. within its own noise. Ranking those by
+    raw score alone lets a fixed top-k budget get spent fully-training expensive
+    residual/wide candidates that predict a noise-level fraction higher than a
+    cheap equivalent and never actually win (documented repeatedly: image
+    residuals at ~50min/candidate never took a release). So we bucket scores
+    that fall within `tie_tolerance` and, within a bucket, prefer the cheaper
+    architecture (same complexity_proxy tie-break search.py already uses when
+    recording corpus labels). This trims release compute 20-48% per domain while
+    the top-1 predicted accuracy drops at most `tie_tolerance`."""
     specs = list(enumerate_specs(profile.task_type))
     scores = score_specs(model, profile, specs)
-    order = np.argsort(-scores)
+
+    def rank_key(i: int) -> tuple:
+        bucket = round(float(scores[i]) / tie_tolerance) if tie_tolerance > 0 else float(scores[i])
+        return (-bucket, specs[i].complexity_proxy(), specs[i].describe())
+
+    order = sorted(range(len(specs)), key=rank_key)
     ranked = [(specs[i], float(scores[i])) for i in order[:top_k]]
     best_spec, best_score = ranked[0]
     return best_spec, best_score, ranked
