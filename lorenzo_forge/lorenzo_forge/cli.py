@@ -14,7 +14,7 @@ from lorenzo_forge.profile import DataProfile
 from lorenzo_forge.release import BUILTIN_DOMAINS, load_domain, release
 
 DEFAULT_CORPUS = "lorenzo_forge/data/meta_training_corpus.jsonl"
-DEFAULT_MODEL = "lorenzo_forge/artifacts/meta_model.keras"
+DEFAULT_MODEL = "lorenzo_forge/artifacts/scorer_model.keras"
 
 
 def _cmd_build_corpus(args: argparse.Namespace) -> None:
