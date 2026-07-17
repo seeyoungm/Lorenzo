@@ -37,7 +37,7 @@ aria2c -x 8 -s 8 -d ~/.keras/datasets -o cifar-10-batches-py-target_archive \
 | Lorenzo TimeSeries 1.2 | 시계열(`timeseries_v1`) | **0.880** | `releases/timeseries_1_2/` |
 | Lorenzo Text 1.3 | 텍스트(IMDB) | 0.867 | `releases/text_1_3/` |
 | Lorenzo Text 1.3 (Reuters) | 텍스트(Reuters 46클래스) | 0.818 | `releases/text_reuters_1_3/` |
-| Lorenzo CIFAR 1.0 | 이미지(CIFAR-10, 컬러 3만+) | **0.799** (신규) | `releases/cifar_1_0/` |
+| Lorenzo CIFAR 1.1 | 이미지(CIFAR-10, 컬러 3만+) | **0.811** (was 0.799) | `releases/cifar_1_1/` |
 
 (구버전 카드도 `releases/`에 히스토리로 남아 있음. 가중치 `model.keras`는 gitignore, 카드만 커밋.)
 
@@ -123,6 +123,6 @@ lorenzo-forge train-meta --epochs 30 --corpus $S --out lorenzo_forge/artifacts/s
 
 ## 다음 로컬 작업 제안
 1. 사전학습 임베딩(GloVe)/Transformer로 텍스트 정확도 천장(~0.86) 돌파 — 비용 큰 별도 이니셔티브.
-2. CIFAR 1.0(0.799)은 top-k 8, epochs 40으로 뽑은 첫 시도 — v1.0 스코어러는 CIFAR에 `3x Conv2D(256) plain`을 추천함(기존 승자 `4x Conv2D(128) residual`과 다름). top-k/epochs 늘려 재도전하면 더 오를 여지 있음(단 후보당 수십 분, 총 몇 시간).
+2. **CIFAR 1.1 (0.811) 완료** — 2026-07-17. 경로: 스코어러 재도전(top-8/epochs-60, v1.1 tie-break)은 최고 0.778로 **오히려 후퇴**했음 — v1.0 스코어러가 기존 승자 `4x Conv2D(128) residual`을 top-15 밖으로 밀어내고 plain 256 conv만 추천하는 "스코어러 드리프트"(HANDOFF #4 현상). 대신 **스코어러 우회 직접 학습**(정공법)으로 돌파: 스코어러 재도전 top-8에서 유일하게 살아남은 후보가 GAP 변형(3x256 gap, 0.778)이었던 데 착안해, 검증된 residual 베이스에 `pool_style=gap`을 얹은 `4x Conv2D(128, k5, tanh) [residual+gap]`을 직접 학습 → **test 0.811**(기존 residual+standard 0.788보다 위, 파라미터도 2.88M<2.95M로 더 작음). 교훈: GAP이 Flatten+거대 Dense를 대체해 과적합을 줄임. 직접 학습 스크립트는 scratchpad에 있었음(`release`의 `full_train`/`_build_model_card` 재사용). 스코어러 top-k만으로 못 넘을 땐 이 우회가 정답.
 3. **텍스트 릴리스는 비쌈**: bilstm/bigru 후보 + 큰 데이터(IMDB 5만)면 후보당 수십 분~시간 단위. 재릴리스할 땐 `--num-samples`를 2.5만 정도로 줄여도 이진 분류엔 충분(50k로 돌렸다가 첫 후보에 3시간+ 걸려 중단한 적 있음).
 4. **재릴리스 = 정확도 향상 아님(반복 확인됨)**: 스코어러 재학습마다 도메인별로 결과가 오르락내리락함. v1.0에서도 Tabular은 올랐지만(0.931) TimeSeries는 후퇴(0.864<0.880). 새 스코어러로 재릴리스할 땐 반드시 기존 카드의 test acc와 비교해서 개선된 것만 채택.
